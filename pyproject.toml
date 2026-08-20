@@ -22,7 +22,7 @@ classifiers = [
 [project.optional-dependencies]
 local = ["ultralytics>=8.3,<9"]
 roboflow = ["requests>=2.32,<3"]
-audit = ["requests>=2.32,<3", "opencv-python>=4.10,<5"]
+audit = ["requests>=2.32,<3", "opencv-python>=4.10,<6"]
 test = ["pytest>=8,<10", "pytest-qt>=4.4,<5", "pypdf>=5,<7"]
 
 [project.scripts]
