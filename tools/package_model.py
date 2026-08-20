@@ -6,6 +6,7 @@ import hashlib
 import json
 import shutil
 from datetime import datetime, timezone
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 
@@ -28,6 +29,14 @@ def best_row(results_csv: Path) -> dict[str, str]:
     return max(rows, key=lambda row: float(row[key]))
 
 
+def installed_version(package_name: str) -> str | None:
+    """Return package metadata without importing optional ML runtimes."""
+    try:
+        return version(package_name)
+    except PackageNotFoundError:
+        return None
+
+
 def package(run: Path, destination: Path, artifact_root: Path, dataset_summary: Path, *, threshold: float) -> dict:
     weights = run / "weights" / "best.pt"
     results = run / "results.csv"
@@ -38,8 +47,6 @@ def package(run: Path, destination: Path, artifact_root: Path, dataset_summary: 
             raise FileExistsError(f"El destino final no está vacío: {target}")
         target.mkdir(parents=True, exist_ok=True)
     row = best_row(results)
-    import torch
-    import ultralytics
     metric_keys = {
         "precision": "metrics/precision(B)", "recall": "metrics/recall(B)",
         "map50": "metrics/mAP50(B)", "map50_95": "metrics/mAP50-95(B)",
@@ -52,7 +59,8 @@ def package(run: Path, destination: Path, artifact_root: Path, dataset_summary: 
         "selection_split": "validation", "best_epoch": int(row["epoch"]),
         "validation_metrics": {name: float(row[key]) for name, key in metric_keys.items()},
         "weights_sha256": sha256(weights), "clinical_validation": False,
-        "ultralytics_version": ultralytics.__version__, "torch_version": torch.__version__,
+        "ultralytics_version": installed_version("ultralytics"),
+        "torch_version": installed_version("torch"),
     }
     shutil.copy2(weights, destination / "best.pt")
     (destination / "model_metadata.json").write_text(json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8")

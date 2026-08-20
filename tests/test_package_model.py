@@ -1,7 +1,10 @@
 import csv
 from pathlib import Path
 
-from tools.package_model import best_row, package
+from importlib.metadata import PackageNotFoundError
+
+import tools.package_model as package_model
+from tools.package_model import best_row, installed_version, package
 
 
 def test_best_row_selects_map50_95_not_last_epoch(tmp_path: Path) -> None:
@@ -13,6 +16,14 @@ def test_best_row_selects_map50_95_not_last_epoch(tmp_path: Path) -> None:
             {"epoch": "1", "metrics/mAP50-95(B)": ".3"},
         ))
     assert best_row(path)["epoch"] == "0"
+
+
+def test_installed_version_allows_missing_optional_runtime(monkeypatch) -> None:
+    def missing(_package_name: str) -> str:
+        raise PackageNotFoundError
+
+    monkeypatch.setattr(package_model, "version", missing)
+    assert installed_version("torch") is None
 
 
 def test_package_uses_final_layout_and_training_config_name(tmp_path: Path) -> None:

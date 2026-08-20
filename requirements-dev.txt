@@ -1,5 +1,5 @@
 -r requirements.txt
--r requirements-roboflow.txt
+-r requirements-audit.txt
 pytest>=8,<10
 pytest-qt>=4.4,<5
 pypdf>=5,<7
