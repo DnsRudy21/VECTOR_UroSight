@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vector-urosight"
+version = "0.1.0"
+description = "Academic desktop prototype for traceable urinary sediment image analysis"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = "AGPL-3.0-only"
+authors = [{name = "José Carlos Malacara Espinosa"}]
+dependencies = ["PySide6>=6.7,<7", "Pillow>=10,<13", "python-dotenv>=1.0,<2", "reportlab>=4.2,<5"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Education",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+local = ["ultralytics>=8.3,<9"]
+roboflow = ["requests>=2.32,<3"]
+audit = ["requests>=2.32,<3", "opencv-python>=4.10,<5"]
+test = ["pytest>=8,<10", "pytest-qt>=4.4,<5", "pypdf>=5,<7"]
+
+[project.scripts]
+vector-urosight = "src.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-ra"

@@ -1,0 +1,35 @@
+name: Reporte de error
+description: Reporta un problema reproducible sin incluir información sensible.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "No adjunte credenciales, información clínica identificable, imágenes privadas ni pesos."
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción
+      description: ¿Qué ocurrió y qué esperaba que ocurriera?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Pasos para reproducir
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Entorno
+      description: Sistema operativo y versión de Python.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacidad
+      options:
+        - label: Confirmo que este reporte no contiene datos clínicos identificables ni secretos.
+          required: true
