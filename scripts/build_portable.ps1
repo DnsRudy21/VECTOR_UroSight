@@ -6,12 +6,12 @@ python -m PyInstaller --noconfirm --clean --windowed `
   --name VECTOR_UroSight `
   --add-data "models/vector_urosight/best.pt;models/vector_urosight" `
   --collect-data ultralytics `
+  --collect-all matplotlib `
   --hidden-import cv2 `
   --exclude-module IPython `
   --exclude-module pytest `
   --exclude-module pandas `
   --exclude-module scipy `
-  --exclude-module matplotlib `
   --exclude-module torchvision `
   --exclude-module torchaudio `
   --exclude-module tensorboard `
