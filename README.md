@@ -56,11 +56,11 @@ flowchart LR
 
 ### Resultados experimentales
 
-El checkpoint final es YOLO11n, entrenado a 320 px durante 30 épocas. El umbral 0.25 fue seleccionado exclusivamente sobre validación.
+El checkpoint final es YOLO11n, entrenado a 320 px durante 30 épocas. La configuración de operación usa 480 px y umbral 0.25, seleccionados exclusivamente sobre validación; no se reentrenó ni ajustó con test.
 
 | Evaluación | Precision | Recall | mAP@50 | mAP@50–95 |
 |---|---:|---:|---:|---:|
-| Test interno USE | 0.7811 | 0.7476 | 0.7526 | 0.4293 |
+| Test interno USE (operación 480 px) | 0.7863 | 0.8181 | 0.8255 | 0.4694 |
 | Evaluación externa UMID | 0.5238 | 0.1199 | 0.0685 | 0.0348 |
 
 La caída en UMID muestra un **cambio de dominio severo**. Estas métricas describen un experimento reproducible; no demuestran desempeño clínico ni generalización a otros laboratorios, microscopios o protocolos.
@@ -113,7 +113,7 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-La versión candidata pasa **49 pruebas automatizadas**. El flujo de integración continua repite la suite en Python 3.11 para cada `push` y `pull request`.
+La versión candidata pasa **51 pruebas automatizadas**. El flujo de integración continua repite la suite en Python 3.11 para cada `push` y `pull request`.
 
 ### Datos, privacidad y artefactos
 
@@ -175,13 +175,13 @@ Its core principle is simple: automated output must remain **reviewable, explain
 - Human review for incorrect classes, rejected detections, and omitted elements.
 - Explicit rules and technical image-quality warnings.
 - Structured PDF, CSV, and JSON exports.
-- Modular architecture with 49 automated tests and GitHub Actions CI.
+- Modular architecture with 51 automated tests and GitHub Actions CI.
 
 ### Experimental status
 
 | Evaluation | Precision | Recall | mAP@50 | mAP@50–95 |
 |---|---:|---:|---:|---:|
-| Internal USE test | 0.7811 | 0.7476 | 0.7526 | 0.4293 |
+| Internal USE test (480 px operation) | 0.7863 | 0.8181 | 0.8255 | 0.4694 |
 | External UMID evaluation | 0.5238 | 0.1199 | 0.0685 | 0.0348 |
 
 The external result shows severe domain shift. VECTOR UroSight is **not a diagnostic device, is not clinically validated, and must not replace professional laboratory review**.

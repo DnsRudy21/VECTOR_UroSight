@@ -86,9 +86,10 @@ def test_local_yolo_contract_without_heavy_model(monkeypatch, tmp_path):
         def tolist(self): return [10, 20, 50, 70]
     box = SimpleNamespace(cls=Scalar(0), conf=Scalar(.91), xyxy=Coordinates())
     result = SimpleNamespace(boxes=[box], names={0: "WBC"}, speed={"inference": 7.5})
+    request = {}
     class YOLO:
         def __init__(self, _path): pass
-        def predict(self, **_kwargs): return [result]
+        def predict(self, **kwargs): request.update(kwargs); return [result]
     monkeypatch.setitem(sys.modules, "ultralytics", SimpleNamespace(YOLO=YOLO))
     weights = tmp_path / "controlled.pt"; weights.write_bytes(b"fixture")
     analysis = LocalYoloProvider(weights).predict(Path("field.png"))
@@ -99,3 +100,4 @@ def test_local_yolo_contract_without_heavy_model(monkeypatch, tmp_path):
     assert analysis.detections[0].model_id == "controlled.pt"
     assert analysis.detections[0].inference_threshold == .25
     assert analysis.detections[0].source_image == "field.png"
+    assert request["imgsz"] == 480

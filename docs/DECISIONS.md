@@ -98,3 +98,9 @@ El paquete `onedir` incluye Python, PySide6, el runtime de inferencia y el check
 
 ## D-033 — Publicación fuente mínima bajo AGPL-3.0
 El repositorio público excluye datasets, imágenes, pesos, checkpoints, portables, resultados generados, credenciales y artefactos de entrenamiento. Debido a la integración opcional con Ultralytics, el código público se alinea con AGPL-3.0. Cualquier distribución propietaria o comercial debe revisar licencias Enterprise de Ultralytics, términos de Qt y obligaciones regulatorias con asesoría independiente.
+
+## D-034 — Resolución operativa de 480 px
+Sin modificar los pesos, se compararon 320, 480, 640 y 960 px exclusivamente sobre validation. 480 px obtuvo el mejor mAP@50 (0.789789) y mAP@50–95 (0.454004). El umbral 0.25 se conservó porque elevarlo a 0.453 no mejoró precision ni mAP. Con la configuración congelada, la evaluación formal posterior en test obtuvo precision 0.786285, recall 0.818092, mAP@50 0.825461 y mAP@50–95 0.469418. Un ajuste corto con backbone congelado fue descartado en validation por desempeño inferior; sus pesos no se distribuyen.
+
+## D-035 — PySide6 6.8.3 fijado para el portable
+PySide6 6.11.1 produjo un fallo de carga de `QtWidgets` únicamente dentro del ejecutable congelado. Se fijó 6.8.3 y se validó el paquete final ejecutando inferencia local sobre cinco imágenes: cinco exitosas, cero fallidas. La prueba también confirma la inclusión del modelo y sus dependencias de ejecución.

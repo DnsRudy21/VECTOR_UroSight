@@ -10,7 +10,7 @@ El flujo local es reproducible y estable en el equipo auditado, pero el detector
 
 | Evaluación | Precisión | Recall | mAP@50 | mAP@50–95 |
 |---|---:|---:|---:|---:|
-| Test interno USE | 0.7811 | 0.7476 | 0.7526 | 0.4293 |
+| Test interno USE, configuración operativa 480 px | 0.7863 | 0.8181 | 0.8255 | 0.4694 |
 | Externo UMID | 0.5238 | 0.1199 | 0.0685 | 0.0348 |
 
 En el análisis interno a IoU 0.50 se observaron 1,415 verdaderos positivos, 545 falsos positivos, 241 falsos negativos y 36 confusiones de clase. `cast` y `epithn` permanecen entre las clases débiles documentadas.

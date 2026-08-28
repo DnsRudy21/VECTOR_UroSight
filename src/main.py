@@ -15,7 +15,8 @@ def build_provider():
                                 settings.confidence_threshold,
                                 diagnostic=settings.roboflow_diagnostic)
     if settings.inference_provider == "local":
-        return LocalYoloProvider(settings.local_model_path, settings.confidence_threshold)
+        return LocalYoloProvider(settings.local_model_path, settings.confidence_threshold,
+                                 settings.local_model_imgsz)
     return MockInferenceProvider()
 
 

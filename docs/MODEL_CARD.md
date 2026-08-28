@@ -27,7 +27,8 @@ Detector de partículas en imágenes microscópicas de sedimento urinario para u
 - Arquitectura: YOLO11n mediante transferencia de aprendizaje, sin entrenamiento desde cero.
 - Implementación: Ultralytics 8.4.90, PyTorch 2.12.1+cpu.
 - Hardware auditado: Intel Core i7-7700HQ; CUDA no disponible.
-- Resolución baseline: 320 px.
+- Resolución de entrenamiento: 320 px.
+- Resolución de inferencia seleccionada en validación: 480 px.
 - Batch: 8; máximo 30 épocas; patience 7; seed 42; workers 0.
 - Selección: fitness de Ultralytics sobre validación interna; mejor checkpoint en época 30.
 - Umbral operativo: 0.25, seleccionado exclusivamente en validación por máximo F1 global.
@@ -53,9 +54,9 @@ UMID se reserva para validación externa de las tres categorías semánticamente
 
 Checkpoint congelado en época 30. En validación interna obtuvo precision 0.7606, recall 0.7605, mAP@50 0.8032 y mAP@50–95 0.4574.
 
-El test interno deduplicado se evaluó una sola vez, después de congelar checkpoint y umbral: precision 0.7811, recall 0.7476, mAP@50 0.7526 y mAP@50–95 0.4293. La inferencia de evaluación fue 14.6 ms por imagen en CPU, sin incluir carga inicial del modelo.
+La evaluación histórica a 320 px produjo precision 0.7811, recall 0.7476, mAP@50 0.7526 y mAP@50–95 0.4293. Después se compararon resoluciones exclusivamente en validation (320, 480, 640 y 960 px), se congeló 480 px y se realizó una nueva evaluación formal del mismo checkpoint sobre test: precision 0.7862847448129531, recall 0.8180918694495516, mAP@50 0.8254612949398357 y mAP@50–95 0.4694183623083814. La inferencia fue 40.93 ms por imagen en CPU, sin incluir carga inicial.
 
-Por clase, mAP@50–95 en test: `eryth` 0.503, `leuko` 0.473, `epith` 0.503, `epithn` 0.282, `cast` 0.284, `cryst` 0.507 y `mycete` 0.454. Las clases `cast` y `epithn` son las más débiles.
+Por clase, mAP@50–95 en test a 480 px: `eryth` 0.532, `leuko` 0.487, `epith` 0.573, `epithn` 0.317, `cast` 0.344, `cryst` 0.554 y `mycete` 0.479. `epithn` es la clase más débil por esta métrica.
 
 En UMID externo, limitado a las tres clases compatibles, obtuvo precision 0.5238, recall 0.1199, mAP@50 0.0685 y mAP@50–95 0.0348. La caída evidencia domain shift severo y limita la generalización fuera de USE.
 

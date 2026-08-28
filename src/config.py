@@ -30,12 +30,24 @@ def _confidence_from_env() -> float:
     return value
 
 
+def _imgsz_from_env() -> int:
+    raw = os.getenv("LOCAL_MODEL_IMGSZ", "480")
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError("LOCAL_MODEL_IMGSZ debe ser un entero positivo múltiplo de 32.") from exc
+    if value <= 0 or value % 32:
+        raise ValueError("LOCAL_MODEL_IMGSZ debe ser un entero positivo múltiplo de 32.")
+    return value
+
+
 @dataclass(frozen=True)
 class Settings:
     inference_provider: str
     roboflow_api_key: str
     roboflow_model_id: str
     local_model_path: Path
+    local_model_imgsz: int
     confidence_threshold: float
     roboflow_diagnostic: bool
 
@@ -49,7 +61,8 @@ class Settings:
         default_model = bundled_model if getattr(sys, "frozen", False) else Path("models/vector_urosight/best.pt")
         return cls(provider, os.getenv("ROBOFLOW_API_KEY", ""),
                    os.getenv("ROBOFLOW_MODEL_ID", "urine-sediment-yolov8/1"),
-                   Path(os.getenv("LOCAL_MODEL_PATH", str(default_model))), _confidence_from_env(),
+                   Path(os.getenv("LOCAL_MODEL_PATH", str(default_model))), _imgsz_from_env(),
+                   _confidence_from_env(),
                    os.getenv("ROBOFLOW_DIAGNOSTIC", "false").strip().lower() in {"1", "true", "yes"})
 
 
