@@ -56,11 +56,11 @@ flowchart LR
 
 ### Resultados experimentales
 
-El checkpoint final es YOLO11n, entrenado a 320 px durante 30 épocas. La configuración de operación usa 480 px y umbral 0.25, seleccionados exclusivamente sobre validación; no se reentrenó ni ajustó con test.
+El checkpoint final es YOLO11n, entrenado a 320 px durante 30 épocas. La configuración de operación usa inferencia aumentada a 448 px y umbral 0.25, seleccionados exclusivamente sobre validación; no se reentrenó ni ajustó con test.
 
 | Evaluación | Precision | Recall | mAP@50 | mAP@50–95 |
 |---|---:|---:|---:|---:|
-| Test interno USE (operación 480 px) | 0.7863 | 0.8181 | 0.8255 | 0.4694 |
+| Test interno USE (448 px, inferencia aumentada) | 0.7710 | 0.8160 | 0.8360 | 0.4872 |
 | Evaluación externa UMID | 0.5238 | 0.1199 | 0.0685 | 0.0348 |
 
 La caída en UMID muestra un **cambio de dominio severo**. Estas métricas describen un experimento reproducible; no demuestran desempeño clínico ni generalización a otros laboratorios, microscopios o protocolos.
@@ -181,7 +181,7 @@ Its core principle is simple: automated output must remain **reviewable, explain
 
 | Evaluation | Precision | Recall | mAP@50 | mAP@50–95 |
 |---|---:|---:|---:|---:|
-| Internal USE test (480 px operation) | 0.7863 | 0.8181 | 0.8255 | 0.4694 |
+| Internal USE test (448 px, augmented inference) | 0.7710 | 0.8160 | 0.8360 | 0.4872 |
 | External UMID evaluation | 0.5238 | 0.1199 | 0.0685 | 0.0348 |
 
 The external result shows severe domain shift. VECTOR UroSight is **not a diagnostic device, is not clinically validated, and must not replace professional laboratory review**.

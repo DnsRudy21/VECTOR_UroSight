@@ -5,7 +5,8 @@ from src.inference.base import InferenceProvider
 class LocalYoloProvider(InferenceProvider):
     display_name = "YOLO local"
     is_simulated = False
-    def __init__(self, model_path: Path, confidence: float = 0.25, imgsz: int = 480) -> None:
+    def __init__(self, model_path: Path, confidence: float = 0.25, imgsz: int = 448,
+                 augment: bool = True) -> None:
         if not model_path.exists():
             raise FileNotFoundError(f"No existe el modelo local: {model_path}")
         from ultralytics import YOLO
@@ -14,6 +15,7 @@ class LocalYoloProvider(InferenceProvider):
         self.model_id = model_path.name
         self._confidence = confidence
         self._imgsz = imgsz
+        self._augment = augment
         self.confidence_threshold = confidence
 
     def predict(self, image_path: Path) -> ImageAnalysis:
@@ -21,6 +23,7 @@ class LocalYoloProvider(InferenceProvider):
             source=str(image_path),
             conf=self._confidence,
             imgsz=self._imgsz,
+            augment=self._augment,
             verbose=False,
         )[0]
         detections = []

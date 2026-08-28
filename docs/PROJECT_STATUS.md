@@ -62,6 +62,7 @@ El porcentaje representa completitud técnica, no desempeño clínico. El sistem
 - Test interno usado una sola vez: precision 0.7811, recall 0.7476, mAP@50 0.7526 y mAP@50–95 0.4293.
 - UMID externo: precision 0.5238, recall 0.1199, mAP@50 0.0685 y mAP@50–95 0.0348; domain shift severo documentado.
 - Optimización operativa posterior: 480 px seleccionado únicamente en validation; evaluación formal congelada en test con precision 0.786285, recall 0.818092, mAP@50 0.825461 y mAP@50–95 0.469418. El checkpoint no cambió.
+- Revisión de cobertura: 448 px con inferencia aumentada seleccionado en validation. En test obtuvo precision 0.771033, recall 0.815977, mAP@50 0.835967 y mAP@50–95 0.487220; sobre las cinco imágenes sintéticas pasó de 36 a 86 detecciones, sin usar ese material como evidencia de exactitud.
 - Análisis de error: 1,415 TP, 545 FP, 241 FN y 36 confusiones de clase a IoU 0.50.
 - Modelo local real probado; 12 ejemplos renderizados y captura visual offscreen generados.
 - Suite final: 49 passed. Verificador de liberación aprobado y escaneo activo de rutas/secretos limpio.

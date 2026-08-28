@@ -89,13 +89,13 @@ def generate_pdf(result: StudyResult, output_path: Path) -> Path:
     info = _table(meta, [3.4*cm, 5.2*cm, 3.7*cm, 4.7*cm]); info.setStyle(TableStyle([("FONTNAME", (0,0), (0,-1), "Helvetica-Bold"), ("FONTNAME", (2,0), (2,-1), "Helvetica-Bold"), ("BACKGROUND", (0,0), (0,-1), colors.HexColor("#E8F0F2")), ("BACKGROUND", (2,0), (2,-1), colors.HexColor("#E8F0F2"))]))
     story += [info, Spacer(1, 12), Paragraph("Resumen consolidado", styles["Heading2"])]
     counts, averages = result.class_counts(), result.averages_per_image()
-    rows = [["Clase", "Total", "Promedio por campo", "Confianza media", "Presencia"]]
+    rows = [["Clase", "Total", "Promedio por campo", "Score medio", "Presencia"]]
     for name, total in sorted(counts.items()):
         values = [d.confidence for image in result.successful_images for d in result.detections_for(image) if d.class_name == name]
         rows.append([name.replace("_", " ").title(), str(total), f"{averages[name]:.2f}", f"{sum(values)/len(values):.1%}", f"{result.fields_by_class()[name]}/{len(result.successful_images)}"])
     if len(rows) == 1: rows.append(["Sin detecciones", "0", "0.00", "-", "0"])
     story += [_table(rows, [4.8*cm, 2*cm, 3.8*cm, 3.2*cm, 3.2*cm], True), Spacer(1, 9),
-              Paragraph(f"Confianza promedio global: <b>{result.average_confidence():.1%}</b> &nbsp;&nbsp; Detecciones ocultas por umbral: <b>{result.hidden_count()}</b> &nbsp;&nbsp; Requieren revisión: <b>{result.review_count()}</b>", styles["BodyText"]),
+              Paragraph(f"Score promedio del modelo: <b>{result.average_confidence():.1%}</b> &nbsp;&nbsp; Detecciones ocultas por umbral: <b>{result.hidden_count()}</b> &nbsp;&nbsp; Requieren revisión: <b>{result.review_count()}</b>", styles["BodyText"]),
               Spacer(1, 6)]
     reviews = result.human_review_summary()
     original_total = sum(len(image.raw_detections) for image in result.successful_images)
@@ -118,7 +118,7 @@ def generate_pdf(result: StudyResult, output_path: Path) -> Path:
         accepted = result.detections_for(analysis); average = sum(d.confidence for d in accepted)/len(accepted) if accepted else 0
         quality = analysis.quality; quality_status = quality.status if quality else "No evaluada"
         field_story = [Paragraph(f"Campo {index}: {analysis.image_path.name}", styles["Heading2"]),
-                       _table([["Detecciones", str(len(accepted)), "Confianza promedio", f"{average:.1%}"],
+                       _table([["Detecciones", str(len(accepted)), "Score promedio", f"{average:.1%}"],
                                ["Originales", str(len(analysis.raw_detections)), "Estado de calidad", quality_status],
                                ["Ocultas/rechazadas", str(len(analysis.hidden_detections(result.confidence_threshold)) + sum(d.human_review == 'incorrecta' for d in analysis.detections)), "Variante", analysis.processing_variant]], [3.7*cm, 3.0*cm, 4.4*cm, 5.9*cm]),
                        Spacer(1, 7), Paragraph(f"Conteos: {_field_counts(result, analysis)}", styles["BodyText"])]

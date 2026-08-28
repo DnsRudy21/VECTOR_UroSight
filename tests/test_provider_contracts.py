@@ -100,4 +100,5 @@ def test_local_yolo_contract_without_heavy_model(monkeypatch, tmp_path):
     assert analysis.detections[0].model_id == "controlled.pt"
     assert analysis.detections[0].inference_threshold == .25
     assert analysis.detections[0].source_image == "field.png"
-    assert request["imgsz"] == 480
+    assert request["imgsz"] == 448
+    assert request["augment"] is True

@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-def metrics_payload(metrics, names: dict[int, str], *, split: str, confidence: float | None) -> tuple[dict, list[dict]]:
+def metrics_payload(metrics, names: dict[int, str], *, split: str, confidence: float | None,
+                    augment: bool = False) -> tuple[dict, list[dict]]:
     box = metrics.box
     per_class = []
     maps = list(box.maps)
@@ -32,6 +33,7 @@ def metrics_payload(metrics, names: dict[int, str], *, split: str, confidence: f
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
         "split": split,
         "confidence": confidence,
+        "augment": augment,
         "precision": float(box.mp),
         "recall": float(box.mr),
         "map50": float(box.map50),
@@ -60,14 +62,16 @@ def main() -> int:
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--confidence", type=float)
     parser.add_argument("--plots", action="store_true")
+    parser.add_argument("--augment", action="store_true")
     args = parser.parse_args()
     from ultralytics import YOLO
     model = YOLO(str(args.model))
-    kwargs = {"data": str(args.data), "split": args.split, "imgsz": args.imgsz, "batch": args.batch, "device": "cpu", "workers": 0, "plots": args.plots, "project": str(args.output.parent.resolve()), "name": args.output.name, "exist_ok": True, "verbose": True}
+    kwargs = {"data": str(args.data), "split": args.split, "imgsz": args.imgsz, "batch": args.batch, "device": "cpu", "workers": 0, "plots": args.plots, "augment": args.augment, "project": str(args.output.parent.resolve()), "name": args.output.name, "exist_ok": True, "verbose": True}
     if args.confidence is not None:
         kwargs["conf"] = args.confidence
     metrics = model.val(**kwargs)
-    summary, per_class = metrics_payload(metrics, model.names, split=args.split, confidence=args.confidence)
+    summary, per_class = metrics_payload(metrics, model.names, split=args.split,
+                                         confidence=args.confidence, augment=args.augment)
     write_evaluation(args.output, summary, per_class)
     print(json.dumps(summary, indent=2, ensure_ascii=False))
     return 0

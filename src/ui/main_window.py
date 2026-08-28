@@ -123,7 +123,7 @@ class MainWindow(QMainWindow):
         self._detections.cellClicked.connect(self._detection_selected)
 
         results = QFrame(); results_layout = QVBoxLayout(results); results_layout.addWidget(QLabel("RESUMEN DEL ESTUDIO", objectName="muted"))
-        cards = QGridLayout(); self._count_card = self._card(cards, "Detecciones", 0, 0); self._confidence_card = self._card(cards, "Confianza promedio", 0, 1); self._time_card = self._card(cards, "Tiempo total", 1, 0); self._images_card = self._card(cards, "Campos procesados", 1, 1); results_layout.addLayout(cards)
+        cards = QGridLayout(); self._count_card = self._card(cards, "Detecciones", 0, 0); self._confidence_card = self._card(cards, "Score promedio", 0, 1); self._time_card = self._card(cards, "Tiempo total", 1, 0); self._images_card = self._card(cards, "Campos procesados", 1, 1); results_layout.addLayout(cards)
         self._summary = QTableWidget(0, 3); self._summary.setHorizontalHeaderLabels(["Clase", "Total", "Promedio/campo"]); self._summary.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch); self._summary.setEditTriggers(QAbstractItemView.NoEditTriggers); results_layout.addWidget(self._summary)
         results_layout.addWidget(QLabel("INTERPRETACIÓN ORIENTATIVA", objectName="muted")); self._interpretation = QTextEdit(); self._interpretation.setReadOnly(True); self._interpretation.setPlaceholderText("Los hallazgos aparecerán después del análisis."); results_layout.addWidget(self._interpretation)
         warning = QLabel("PROTOTIPO ACADÉMICO · No sustituye el criterio profesional."); warning.setWordWrap(True); warning.setStyleSheet("color:#f0c96a;padding:8px;background:#2b2919;border-radius:6px;"); results_layout.addWidget(warning); splitter.addWidget(results)

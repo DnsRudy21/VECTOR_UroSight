@@ -28,7 +28,7 @@ Detector de partículas en imágenes microscópicas de sedimento urinario para u
 - Implementación: Ultralytics 8.4.90, PyTorch 2.12.1+cpu.
 - Hardware auditado: Intel Core i7-7700HQ; CUDA no disponible.
 - Resolución de entrenamiento: 320 px.
-- Resolución de inferencia seleccionada en validación: 480 px.
+- Configuración operativa seleccionada en validación: 448 px con inferencia aumentada.
 - Batch: 8; máximo 30 épocas; patience 7; seed 42; workers 0.
 - Selección: fitness de Ultralytics sobre validación interna; mejor checkpoint en época 30.
 - Umbral operativo: 0.25, seleccionado exclusivamente en validación por máximo F1 global.
@@ -54,9 +54,9 @@ UMID se reserva para validación externa de las tres categorías semánticamente
 
 Checkpoint congelado en época 30. En validación interna obtuvo precision 0.7606, recall 0.7605, mAP@50 0.8032 y mAP@50–95 0.4574.
 
-La evaluación histórica a 320 px produjo precision 0.7811, recall 0.7476, mAP@50 0.7526 y mAP@50–95 0.4293. Después se compararon resoluciones exclusivamente en validation (320, 480, 640 y 960 px), se congeló 480 px y se realizó una nueva evaluación formal del mismo checkpoint sobre test: precision 0.7862847448129531, recall 0.8180918694495516, mAP@50 0.8254612949398357 y mAP@50–95 0.4694183623083814. La inferencia fue 40.93 ms por imagen en CPU, sin incluir carga inicial.
+La evaluación histórica a 320 px produjo precision 0.7811, recall 0.7476, mAP@50 0.7526 y mAP@50–95 0.4293. Una primera optimización a 480 px alcanzó mAP@50 0.825461 y mAP@50–95 0.469418 en test. Tras observar menor cobertura operativa en las imágenes sintéticas, se compararon resoluciones finas e inferencia aumentada exclusivamente en validation. La configuración final congelada, 448 px con aumento, obtuvo en test precision 0.7710333312410897, recall 0.8159774487925525, mAP@50 0.8359672915142167 y mAP@50–95 0.4872195835201552. La inferencia fue 67.80 ms por imagen en CPU.
 
-Por clase, mAP@50–95 en test a 480 px: `eryth` 0.532, `leuko` 0.487, `epith` 0.573, `epithn` 0.317, `cast` 0.344, `cryst` 0.554 y `mycete` 0.479. `epithn` es la clase más débil por esta métrica.
+Por clase, mAP@50–95 en test final: `eryth` 0.546, `leuko` 0.501, `epith` 0.585, `epithn` 0.334, `cast` 0.367, `cryst` 0.562 y `mycete` 0.516. `epithn` es la clase más débil por esta métrica.
 
 En UMID externo, limitado a las tres clases compatibles, obtuvo precision 0.5238, recall 0.1199, mAP@50 0.0685 y mAP@50–95 0.0348. La caída evidencia domain shift severo y limita la generalización fuera de USE.
 

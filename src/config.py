@@ -31,7 +31,7 @@ def _confidence_from_env() -> float:
 
 
 def _imgsz_from_env() -> int:
-    raw = os.getenv("LOCAL_MODEL_IMGSZ", "480")
+    raw = os.getenv("LOCAL_MODEL_IMGSZ", "448")
     try:
         value = int(raw)
     except ValueError as exc:
@@ -41,6 +41,13 @@ def _imgsz_from_env() -> int:
     return value
 
 
+def _boolean_from_env(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name, "true" if default else "false").strip().lower()
+    if raw not in {"1", "0", "true", "false", "yes", "no"}:
+        raise ValueError(f"{name} debe ser true o false.")
+    return raw in {"1", "true", "yes"}
+
+
 @dataclass(frozen=True)
 class Settings:
     inference_provider: str
@@ -48,6 +55,7 @@ class Settings:
     roboflow_model_id: str
     local_model_path: Path
     local_model_imgsz: int
+    local_model_augment: bool
     confidence_threshold: float
     roboflow_diagnostic: bool
 
@@ -62,6 +70,7 @@ class Settings:
         return cls(provider, os.getenv("ROBOFLOW_API_KEY", ""),
                    os.getenv("ROBOFLOW_MODEL_ID", "urine-sediment-yolov8/1"),
                    Path(os.getenv("LOCAL_MODEL_PATH", str(default_model))), _imgsz_from_env(),
+                   _boolean_from_env("LOCAL_MODEL_AUGMENT", True),
                    _confidence_from_env(),
                    os.getenv("ROBOFLOW_DIAGNOSTIC", "false").strip().lower() in {"1", "true", "yes"})
 

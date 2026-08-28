@@ -104,3 +104,6 @@ Sin modificar los pesos, se compararon 320, 480, 640 y 960 px exclusivamente sob
 
 ## D-035 — PySide6 6.8.3 fijado para el portable
 PySide6 6.11.1 produjo un fallo de carga de `QtWidgets` únicamente dentro del ejecutable congelado. Se fijó 6.8.3 y se validó el paquete final ejecutando inferencia local sobre cinco imágenes: cinco exitosas, cero fallidas. La prueba también confirma la inclusión del modelo y sus dependencias de ejecución.
+
+## D-036 — Inferencia aumentada a 448 px
+La configuración de 480 px redujo de 48 a 36 las detecciones visibles respecto al portable anterior sobre cinco imágenes sintéticas. Sin usar esas imágenes sin ground truth para seleccionar métricas, se exploraron resoluciones finas y aumento exclusivamente en validation. 448 px con aumento obtuvo precision 0.778917, recall 0.796293, mAP@50 0.810809 y mAP@50–95 0.470846. Congelada la configuración, test obtuvo 0.771033, 0.815977, 0.835967 y 0.487220, respectivamente. En las cinco imágenes sintéticas recuperó 86 detecciones y un score medio de 0.5339; esto es una comprobación operativa, no evidencia de exactitud.
