@@ -45,7 +45,7 @@ def run_gate(model: Path, images: list[Path], rounds: int, confidence: float) ->
                                  "error_type": type(exc).__name__})
     latencies = [record["elapsed_ms"] for values in records.values() for record in values]
     stable = all(len({record["fingerprint"] for record in values}) <= 1 for values in records.values())
-    return {"model": model.name, "rounds": rounds, "images": len(images), "requests": rounds * len(images),
+    return {"model": model.name, "rounds": rounds, "images": len(images), "inferences": rounds * len(images),
             "confidence": confidence, "deterministic_across_rounds": stable,
             "failures": failures, "latency_ms": {"median": statistics.median(latencies) if latencies else None,
             "p95": sorted(latencies)[max(0, int(len(latencies)*.95)-1)] if latencies else None,
@@ -66,7 +66,7 @@ def main() -> int:
     result = run_gate(args.model, images, args.rounds, args.confidence)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2), encoding="utf-8")
-    print(json.dumps({key: result[key] for key in ("requests", "deterministic_across_rounds", "failures", "latency_ms")}, indent=2))
+    print(json.dumps({key: result[key] for key in ("inferences", "deterministic_across_rounds", "failures", "latency_ms")}, indent=2))
     return 0 if not result["failures"] and result["deterministic_across_rounds"] else 1
 
 

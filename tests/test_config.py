@@ -1,10 +1,21 @@
 def test_default_settings_are_safe():
     from src.config import Settings, settings
-    assert settings.inference_provider in {"mock", "local", "roboflow"}
+    assert settings.inference_provider in {"mock", "local"}
     assert 0 <= settings.confidence_threshold <= 1
     assert settings.local_model_imgsz == 448
     assert settings.local_model_augment is True
-    assert Settings.from_environment().inference_provider in {"mock", "local", "roboflow"}
+    assert Settings.from_environment().inference_provider in {"mock", "local"}
+
+
+def test_remote_provider_is_rejected(monkeypatch):
+    from src.config import Settings
+    monkeypatch.setenv("INFERENCE_PROVIDER", "remote")
+    try:
+        Settings.from_environment()
+    except ValueError as exc:
+        assert "mock o local" in str(exc)
+    else:
+        raise AssertionError("Un proveedor remoto no debe aceptarse.")
 
 
 def test_default_local_model_path_matches_packaged_model(monkeypatch):

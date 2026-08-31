@@ -18,16 +18,6 @@
 - [x] Rediseñar, generar y revisar visualmente el PDF.
 - [x] Ejecutar regresión completa, recorrido manual y auditoría final.
 
-## Ciclo 3 - Roboflow REST
-
-- [x] Sustituir `inference-sdk` por el contrato REST oficial con `requests`.
-- [x] Añadir timeout, errores sanitizados y validación estricta de respuestas.
-- [x] Eliminar `inference-sdk` de dependencias y conservar proveedores existentes.
-- [x] Añadir pruebas contractuales HTTP sin red.
-- [x] Ejecutar inferencia real individual y multimagen.
-- [x] Verificar cajas, clases, confianza, PDF, CSV y JSON.
-- [x] Confirmar que ninguna exportación contiene la API key.
-
 ## Ciclo 4 - Auditoría de detecciones reales
 
 - [x] Conservar clase cruda, normalizada, modelo, umbral, caja e imagen fuente.

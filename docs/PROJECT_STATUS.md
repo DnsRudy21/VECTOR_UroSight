@@ -36,14 +36,14 @@ El porcentaje representa completitud técnica, no desempeño clínico. El sistem
 
 ## Completado
 
-- Arquitectura modular PySide6 con proveedores mock, Roboflow REST y adaptador Local YOLO.
+- Arquitectura modular PySide6 con modo de demostración explícito y adaptador YOLO exclusivamente local.
 - Flujo multimagen, revisión humana, reglas explícitas y exportación PDF/CSV/JSON.
 - Suite ejecutada el 2026-08-17: 46 passed, 0 failed, 0 skipped en 7.47 s.
 - Inventario inicial de fuentes: USE en Pascal VOC y UMID convertido a YOLO.
 - Hardware verificado: Python 3.11.9, PyTorch 2.12.1+cpu, CUDA no disponible.
 - Ontología inicial sustentada por README y etiquetas reales de las fuentes, incluidos conteos por clase de UMID.
 - Auditoría reproducible con SHA-256: 26 grupos duplicados cruzaban splits USE; UMID no presentó fuga exacta entre splits.
-- Dataset maestro USE: 5,292 imágenes, 41,695 objetos, splits 4,176/848/268 y siete clases.
+- Dataset maestro USE: 5,293 imágenes, 41,697 objetos, splits 4,177/848/268 y siete clases.
 - Validación del derivado: cero hashes cruzados entre splits y cero etiquetas YOLO inválidas.
 - Corrida de medición YOLO11n a 320 px: 84 imágenes en 11.4 s; validación de 848 imágenes en 26.1 s.
 - Primera época completa del baseline: 7 min 43 s de entrenamiento y 36.3 s de validación; mAP@50 de validación 0.299 y mAP@50–95 0.137 (resultado temprano, no final).
@@ -72,7 +72,7 @@ El porcentaje representa completitud técnica, no desempeño clínico. El sistem
 - Portable Windows x64 configurado con modelo local congelado y sin secretos; la redistribución pública de pesos continúa sujeta a confirmación de licencia.
 - Suite completa ejecutada el 2026-08-20: 49 passed, 0 failed, 0 skipped.
 - Instalación editable y construcción de wheel verificadas; metadatos CFF/YAML válidos y enlaces locales del README íntegros.
-- Auditoría de dependencias base, local, Roboflow, auditoría y build: cero vulnerabilidades conocidas reportadas por `pip-audit`.
+- Auditoría de dependencias base, local, auditoría y build: cero vulnerabilidades conocidas reportadas por `pip-audit`.
 - CI de GitHub, plantillas de colaboración, citación y documentación bilingüe preparados.
 
 ## En ejecución

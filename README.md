@@ -6,7 +6,8 @@
 
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![PySide6](https://img.shields.io/badge/UI-PySide6-41CD52?logo=qt&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-49%20passed-2EA44F)
+![Tests](https://img.shields.io/badge/tests-automated-2EA44F)
+![Offline](https://img.shields.io/badge/inference-100%25%20local-087F8C)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 ![Status](https://img.shields.io/badge/status-academic%20prototype-orange)
 
@@ -32,7 +33,7 @@ El diseño sigue una idea central: toda salida automatizada debe ser **revisable
 | Área | Funcionalidad |
 |---|---|
 | Interfaz | Flujo multimagen en PySide6, arrastrar y soltar, filtros y revisión visual |
-| Inferencia | Proveedor de demostración, Roboflow REST y YOLO local intercambiables |
+| Inferencia | YOLO local; modo de demostración separado para desarrollo y pruebas |
 | Trazabilidad | Clase original y normalizada, confianza, caja, modelo, umbral e imagen fuente |
 | Revisión humana | Marcar detecciones correctas, incorrectas, clase equivocada o elementos omitidos |
 | Calidad | Alertas técnicas de brillo, contraste y nitidez sin emitir conclusiones clínicas |
@@ -45,11 +46,9 @@ El diseño sigue una idea central: toda salida automatizada debe ser **revisable
 flowchart LR
     A["Imágenes microscópicas"] --> B["Interfaz PySide6"]
     B --> C["Servicio de análisis"]
-    C --> D{"Proveedor de inferencia"}
-    D --> E["Mock"]
-    D --> F["Roboflow REST"]
-    D --> G["YOLO local"]
-    C --> H["Normalización y reglas auditables"]
+    C --> D["YOLO local"]
+    C -. desarrollo .-> E["Mock explícito"]
+    D --> H["Normalización y reglas auditables"]
     H --> I["Revisión humana"]
     I --> J["PDF · CSV · JSON"]
 ```
@@ -98,13 +97,7 @@ LOCAL_MODEL_PATH=models/vector_urosight/best.pt
 CONFIDENCE_THRESHOLD=0.25
 ```
 
-#### Roboflow REST
-
-```bash
-python -m pip install -r requirements-roboflow.txt
-```
-
-Configure `INFERENCE_PROVIDER=roboflow`, `ROBOFLOW_API_KEY` y `ROBOFLOW_MODEL_ID` únicamente en `.env`. Nunca publique ese archivo.
+La inferencia no realiza solicitudes a servicios externos. Una vez instalado y con `best.pt` presente, el programa funciona sin conexión a Internet.
 
 ### Pruebas
 
@@ -170,7 +163,7 @@ Its core principle is simple: automated output must remain **reviewable, explain
 ### Key features
 
 - Multi-image PySide6 workflow with visual review and filtering.
-- Interchangeable mock, Roboflow REST, and local YOLO providers.
+- Fully local YOLO inference; an explicit mock remains only for development and automated tests.
 - Traceability for raw/normalized class, confidence, box, model, threshold, and source image.
 - Human review for incorrect classes, rejected detections, and omitted elements.
 - Explicit rules and technical image-quality warnings.
@@ -194,7 +187,7 @@ python -m pip install -r requirements.txt
 python -m src.main
 ```
 
-Local YOLO and Roboflow support are optional; see the Spanish setup sections above. Datasets, model weights, credentials, clinical images, and generated artifacts are intentionally excluded.
+Local YOLO setup is described in the Spanish section above. Once dependencies and weights are present, inference requires no network connection. Datasets, model weights, clinical images, and generated artifacts are intentionally excluded.
 
 ### License and attribution
 

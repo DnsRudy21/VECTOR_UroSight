@@ -15,17 +15,16 @@ src/
 
 ## Regla principal
 
-Ninguna clase de interfaz importa directamente Ultralytics o Roboflow.
+Ninguna clase de interfaz importa directamente Ultralytics.
 
 ## Proveedores
 
 - `MockInferenceProvider`
-- `RoboflowProvider`
 - `LocalYoloProvider`
 
 Cada proveedor declara un nombre visible y si es simulado. El servicio transfiere esos metadatos al estudio; interfaz, PDF, CSV y JSON los consumen sin importar SDKs específicos.
 
-`RoboflowProvider` usa `requests` contra `https://detect.roboflow.com/{project}/{version}`. Envía el archivo local como cuerpo base64 y pasa clave, umbral y formato como parámetros según el contrato REST oficial. El proveedor encapsula timeout, errores HTTP y validación de la respuesta; la GUI desconoce este transporte.
+`LocalYoloProvider` carga un checkpoint incluido o indicado por ruta local. La inferencia no requiere credenciales ni conexiones de red. `MockInferenceProvider` se limita al desarrollo y siempre se identifica como simulado.
 
 ## Flujo
 

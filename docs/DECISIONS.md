@@ -19,7 +19,7 @@ Cada imagen representa un campo del mismo estudio. Los errores se conservan por 
 La inferencia usa un worker en `QThread`. La cancelación ocurre entre imágenes y la GUI evita ejecuciones duplicadas.
 
 ## D-007 — Dependencias opcionales
-La instalación base incluye el modo demostración. Ultralytics y Roboflow se instalan por separado para evitar descargas innecesarias.
+La instalación base incluye el modo demostración. Ultralytics se instala por separado para evitar descargas innecesarias.
 
 ## D-008 — Métricas no equivalentes a valores clínicos
 Los promedios se rotulan por imagen procesada. No se convierten a valores clínicos ni se inventan rangos.
@@ -39,20 +39,8 @@ Brillo, contraste y varianza de bordes usan umbrales explícitos documentados. N
 ## D-013 — Transparencia del proveedor
 El proveedor activo y la condición simulada forman parte del dominio y de todas las salidas. Los tiempos del mock no se presentan como rendimiento real.
 
-## D-014 — Roboflow mediante REST directo
-Windows Application Control bloquea una DLL importada indirectamente por `inference-sdk`. Sin modificar la política del sistema, el adaptador usa el endpoint REST oficial con `requests`, cuerpo base64, timeout y errores sanitizados.
-
 ## D-015 — Umbral único desde configuración
-`CONFIDENCE_THRESHOLD` configura la solicitud remota, el resultado del estudio y el valor inicial del control de interfaz. Los cambios posteriores del usuario solo filtran las detecciones ya recibidas.
-
-## D-016 — Validación remota real
-La integración REST se ejecutó con una imagen y después con tres imágenes controladas. Se verificaron clases, confianza, cajas dentro de límites, normalización y exportaciones PDF, CSV y JSON sin presencia de la API key.
-
-## D-017 — Clases verificadas contra respuesta real
-En seis imágenes y tres umbrales el modelo devolvió `cast`, `epith` y `leuko`. Se verificó el mapeo `cast → cilindros`, `epith → celulas_epiteliales` y `leuko → leucocitos`; no se infirieron etiquetas no observadas.
-
-## D-018 — Auditoría separada del diagnóstico
-La respuesta JSON cruda solo se conserva con `ROBOFLOW_DIAGNOSTIC=true`. Las revisiones humanas y correcciones son metadatos explícitos; no alteran la predicción original.
+`CONFIDENCE_THRESHOLD` configura la inferencia local, el resultado del estudio y el valor inicial del control de interfaz. Los cambios posteriores del usuario solo filtran las detecciones ya recibidas.
 
 ## D-019 — Preprocesamiento experimental no combinable
 CLAHE, ajuste moderado y reducción ligera de ruido generan copias temporales. La variante queda rotulada y sus resultados no se mezclan con el análisis original.
@@ -107,3 +95,6 @@ PySide6 6.11.1 produjo un fallo de carga de `QtWidgets` únicamente dentro del e
 
 ## D-036 — Inferencia aumentada a 448 px
 La configuración de 480 px redujo de 48 a 36 las detecciones visibles respecto al portable anterior sobre cinco imágenes sintéticas. Sin usar esas imágenes sin ground truth para seleccionar métricas, se exploraron resoluciones finas y aumento exclusivamente en validation. 448 px con aumento obtuvo precision 0.778917, recall 0.796293, mAP@50 0.810809 y mAP@50–95 0.470846. Congelada la configuración, test obtuvo 0.771033, 0.815977, 0.835967 y 0.487220, respectivamente. En las cinco imágenes sintéticas recuperó 86 detecciones y un score medio de 0.5339; esto es una comprobación operativa, no evidencia de exactitud.
+
+## D-037 — Operación exclusivamente local
+La integración remota se retiró por completo del código, configuración, dependencias, pruebas y documentación activa. El portable usa exclusivamente el checkpoint YOLO incluido y no necesita Internet. El proveedor simulado se conserva solo para desarrollo y se identifica inequívocamente en pantalla y exportaciones.

@@ -51,28 +51,22 @@ def _boolean_from_env(name: str, default: bool = False) -> bool:
 @dataclass(frozen=True)
 class Settings:
     inference_provider: str
-    roboflow_api_key: str
-    roboflow_model_id: str
     local_model_path: Path
     local_model_imgsz: int
     local_model_augment: bool
     confidence_threshold: float
-    roboflow_diagnostic: bool
 
     @classmethod
     def from_environment(cls) -> "Settings":
         bundled_model = application_root() / "models" / "vector_urosight" / "best.pt"
         default_provider = "local" if getattr(sys, "frozen", False) and bundled_model.is_file() else "mock"
         provider = os.getenv("INFERENCE_PROVIDER", default_provider).strip().lower()
-        if provider not in {"mock", "local", "roboflow"}:
-            raise ValueError("INFERENCE_PROVIDER debe ser mock, local o roboflow.")
+        if provider not in {"mock", "local"}:
+            raise ValueError("INFERENCE_PROVIDER debe ser mock o local.")
         default_model = bundled_model if getattr(sys, "frozen", False) else Path("models/vector_urosight/best.pt")
-        return cls(provider, os.getenv("ROBOFLOW_API_KEY", ""),
-                   os.getenv("ROBOFLOW_MODEL_ID", "urine-sediment-yolov8/1"),
-                   Path(os.getenv("LOCAL_MODEL_PATH", str(default_model))), _imgsz_from_env(),
+        return cls(provider, Path(os.getenv("LOCAL_MODEL_PATH", str(default_model))), _imgsz_from_env(),
                    _boolean_from_env("LOCAL_MODEL_AUGMENT", True),
-                   _confidence_from_env(),
-                   os.getenv("ROBOFLOW_DIAGNOSTIC", "false").strip().lower() in {"1", "true", "yes"})
+                   _confidence_from_env())
 
 
 settings = Settings.from_environment()
