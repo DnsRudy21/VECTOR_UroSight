@@ -86,7 +86,7 @@ class StudyResult:
     source: str = ""
     provider_name: str = "Proveedor desconocido"
     is_simulated: bool = False
-    confidence_threshold: float = 0.25
+    confidence_threshold: float = 0.44
     audit_mode: bool = False
     patient_name: str = ""
     patient_id: str = field(default_factory=generate_patient_id)

@@ -37,7 +37,8 @@ def installed_version(package_name: str) -> str | None:
         return None
 
 
-def package(run: Path, destination: Path, artifact_root: Path, dataset_summary: Path, *, threshold: float) -> dict:
+def package(run: Path, destination: Path, artifact_root: Path, dataset_summary: Path, *, threshold: float,
+            architecture: str = "YOLO11n", imgsz: int = 320, augment: bool = False) -> dict:
     weights = run / "weights" / "best.pt"
     results = run / "results.csv"
     if not weights.is_file() or not results.is_file():
@@ -53,7 +54,8 @@ def package(run: Path, destination: Path, artifact_root: Path, dataset_summary: 
     }
     metadata = {
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "architecture": "YOLO11n", "task": "object-detection", "imgsz": 320,
+        "architecture": architecture, "task": "object-detection", "imgsz": imgsz,
+        "augment": augment,
         "classes": ["eryth", "leuko", "epith", "epithn", "cast", "cryst", "mycete"],
         "dataset": "VECTOR_dataset derived from USE", "recommended_threshold": threshold,
         "selection_split": "validation", "best_epoch": int(row["epoch"]),
@@ -85,8 +87,14 @@ def main() -> int:
     parser.add_argument("--artifact-destination", type=Path, default=Path("artifacts/model_final"))
     parser.add_argument("--dataset-summary", type=Path, default=Path("data_processed/VECTOR_dataset/dataset_summary.json"))
     parser.add_argument("--threshold", type=float, required=True)
+    parser.add_argument("--architecture", default="YOLO11n")
+    parser.add_argument("--imgsz", type=int, default=320)
+    parser.add_argument("--augment", action="store_true")
     args = parser.parse_args()
-    print(json.dumps(package(args.run, args.model_destination, args.artifact_destination, args.dataset_summary, threshold=args.threshold), indent=2, ensure_ascii=False))
+    print(json.dumps(package(args.run, args.model_destination, args.artifact_destination,
+                             args.dataset_summary, threshold=args.threshold,
+                             architecture=args.architecture, imgsz=args.imgsz,
+                             augment=args.augment), indent=2, ensure_ascii=False))
     return 0
 
 

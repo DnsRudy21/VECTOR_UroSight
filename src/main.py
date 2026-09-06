@@ -1,8 +1,9 @@
 import json
 import sys
 from pathlib import Path
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
-from src.config import settings
+from src.config import application_root, settings
 from src.inference.local_yolo_provider import LocalYoloProvider
 from src.inference.mock_provider import MockInferenceProvider
 from src.services.analysis_service import AnalysisService
@@ -44,6 +45,8 @@ def main() -> int:
     except Exception as exc:
         QMessageBox.critical(None, "No se pudo iniciar VECTOR UroSight", str(exc))
         return 2
+    app.setApplicationName("VECTOR UroSight")
+    app.setWindowIcon(QIcon(str(application_root() / "assets" / "vector_urosight_icon.png")))
     window = MainWindow(AnalysisService(provider))
     window.show()
     return app.exec()

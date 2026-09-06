@@ -23,19 +23,24 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--thresholds", type=float, nargs="+", default=(0.25, 0.35, 0.50))
     parser.add_argument("--imgsz", type=int, default=320)
+    parser.add_argument("--batch", type=int, default=16)
+    parser.add_argument("--augment", action="store_true")
     args = parser.parse_args()
     from ultralytics import YOLO
     model = YOLO(str(args.model))
     rows = []
     for threshold in args.thresholds:
-        metrics = model.val(data=str(args.data), split="val", conf=threshold, imgsz=args.imgsz, batch=16, device="cpu", workers=0, plots=False, verbose=False, project=str(args.output.resolve()), name=f"threshold_{threshold:.2f}", exist_ok=True)
+        metrics = model.val(data=str(args.data), split="val", conf=threshold, imgsz=args.imgsz,
+                            batch=args.batch, device="cpu", workers=0, plots=False,
+                            verbose=False, augment=args.augment, project=str(args.output.resolve()),
+                            name=f"threshold_{threshold:.2f}", exist_ok=True)
         precision, recall = float(metrics.box.mp), float(metrics.box.mr)
         rows.append({"threshold": threshold, "precision": precision, "recall": recall, "f1": f1(precision, recall), "map50": float(metrics.box.map50), "map50_95": float(metrics.box.map)})
     recommended = select(rows)
     args.output.mkdir(parents=True, exist_ok=True)
     with (args.output / "threshold_comparison.csv").open("w", newline="", encoding="utf-8-sig") as handle:
         writer = csv.DictWriter(handle, fieldnames=rows[0].keys()); writer.writeheader(); writer.writerows(rows)
-    payload = {"selection_split": "validation", "criterion": "maximum global F1; recall then lower threshold as tie breakers", "recommended_threshold": recommended["threshold"], "results": rows}
+    payload = {"selection_split": "validation", "criterion": "maximum global F1; recall then lower threshold as tie breakers", "imgsz": args.imgsz, "augment": args.augment, "recommended_threshold": recommended["threshold"], "results": rows}
     (args.output / "threshold_comparison.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(json.dumps(payload, indent=2))
     return 0

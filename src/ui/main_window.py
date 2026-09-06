@@ -5,7 +5,7 @@ from PySide6.QtCore import QSize, Qt, QThread
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QPixmap
 from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QLineEdit,
     QFrame, QGraphicsPixmapItem, QGraphicsScene, QGraphicsView, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QListWidget, QListWidgetItem,
-    QMainWindow, QMessageBox, QProgressBar, QPushButton, QSplitter, QStatusBar,
+    QMainWindow, QMessageBox, QProgressBar, QPushButton, QSplitter, QStatusBar, QTabWidget,
     QTableWidget, QTableWidgetItem, QTextEdit, QVBoxLayout, QWidget)
 
 from src.domain.models import ImageAnalysis, StudyResult, generate_patient_id
@@ -18,28 +18,39 @@ from src.ui.analysis_worker import AnalysisWorker
 from src.ui.image_renderer import fit_pixmap, legend_html, render_analysis
 
 
-STYLE = """
-QMainWindow, QWidget { background:#f4f8fa; color:#17313b; font-family:'Segoe UI'; font-size:13px; }
-QFrame#header { background:#ffffff; border-bottom:1px solid #d8e5e9; }
-QFrame#workflow { background:#eaf4f5; border-bottom:1px solid #d3e5e8; }
-QLabel#brand { font-size:24px; font-weight:700; color:#123d4a; }
-QLabel#subtitle, QLabel#muted { color:#607b84; }
-QLabel#stepActive { color:#ffffff; background:#087f8c; border-radius:13px; padding:6px 12px; font-weight:700; }
-QLabel#step { color:#41636d; background:#ffffff; border:1px solid #cbdde2; border-radius:13px; padding:6px 12px; }
-QFrame.card { background:#ffffff; border:1px solid #d7e4e8; border-radius:10px; }
-QPushButton { min-height:22px; background:#ffffff; color:#174a58; border:1px solid #abcbd2; border-radius:7px; padding:8px 14px; }
-QPushButton:hover { background:#e9f5f6; border-color:#5ca6ae; }
-QPushButton#primary { background:#087f8c; color:#ffffff; border-color:#087f8c; font-weight:700; }
-QPushButton#primary:hover { background:#066b76; }
-QPushButton:disabled { color:#91a5ab; background:#edf2f4; border-color:#dbe4e7; }
-QLineEdit, QDoubleSpinBox, QListWidget, QTableWidget, QTextEdit, QComboBox { background:#ffffff; color:#17313b; border:1px solid #c8dce1; border-radius:7px; padding:4px; selection-background-color:#b9e1e4; selection-color:#12333d; }
-QListWidget::item { padding:8px 4px; border-bottom:1px solid #edf3f5; }
-QListWidget::item:selected { background:#d9eef0; color:#123d4a; }
-QHeaderView::section { background:#e5f0f2; color:#315963; padding:8px; border:0; border-right:1px solid #d4e3e6; font-weight:600; }
-QProgressBar { border:1px solid #b8d1d6; border-radius:5px; text-align:center; background:#ffffff; color:#17313b; }
-QProgressBar::chunk { background:#18a4a6; border-radius:4px; }
-QStatusBar { background:#123d4a; color:#e9f5f6; }
-"""
+PALETTES = {
+    "light": {"bg":"#F4F7F9", "surface":"#FFFFFF", "surface2":"#EAF2F5", "text":"#17323B", "muted":"#607780", "line":"#D4E1E5", "primary":"#087F8C", "hover":"#076B76", "soft":"#DDF1F1", "warning":"#FFF5D9", "warningText":"#77550A"},
+    "dark": {"bg":"#101A20", "surface":"#17252C", "surface2":"#1D3038", "text":"#EAF3F5", "muted":"#A6BBC2", "line":"#334A54", "primary":"#31B7B2", "hover":"#45C9C3", "soft":"#203E43", "warning":"#3D321A", "warningText":"#F3CF72"},
+}
+
+
+def stylesheet(theme: str) -> str:
+    p = PALETTES[theme]
+    return f"""
+    QMainWindow, QWidget {{ background:{p['bg']}; color:{p['text']}; font-family:'Segoe UI'; font-size:13px; }}
+    QFrame#header, QFrame[card='true'] {{ background:{p['surface']}; border:1px solid {p['line']}; border-radius:12px; }}
+    QLabel#brand {{ font-size:23px; font-weight:700; color:{p['text']}; }}
+    QLabel#section {{ color:{p['text']}; font-size:14px; font-weight:700; }}
+    QLabel#muted, QLabel#subtitle {{ color:{p['muted']}; }}
+    QLabel#stage {{ color:{p['primary']}; background:{p['soft']}; padding:6px 12px; border-radius:12px; font-weight:700; }}
+    QPushButton {{ min-height:24px; background:{p['surface']}; color:{p['text']}; border:1px solid {p['line']}; border-radius:8px; padding:8px 13px; }}
+    QPushButton:hover {{ background:{p['soft']}; border-color:{p['primary']}; }}
+    QPushButton#primary {{ background:{p['primary']}; color:#FFFFFF; border-color:{p['primary']}; font-weight:700; }}
+    QPushButton#primary:hover {{ background:{p['hover']}; }}
+    QPushButton#quiet {{ background:transparent; border:0; color:{p['muted']}; }}
+    QPushButton:disabled {{ color:{p['muted']}; background:{p['surface2']}; border-color:{p['line']}; }}
+    QLineEdit, QDoubleSpinBox, QListWidget, QTableWidget, QTextEdit, QComboBox {{ background:{p['surface']}; color:{p['text']}; border:1px solid {p['line']}; border-radius:8px; padding:5px; selection-background-color:{p['soft']}; selection-color:{p['text']}; }}
+    QListWidget::item {{ padding:9px 5px; border-bottom:1px solid {p['line']}; }}
+    QListWidget::item:selected {{ background:{p['soft']}; color:{p['text']}; }}
+    QHeaderView::section {{ background:{p['surface2']}; color:{p['text']}; padding:8px; border:0; border-right:1px solid {p['line']}; font-weight:600; }}
+    QTabWidget::pane {{ border:1px solid {p['line']}; border-radius:9px; background:{p['surface']}; }}
+    QTabBar::tab {{ background:{p['surface2']}; color:{p['muted']}; padding:9px 15px; margin-right:2px; border-top-left-radius:7px; border-top-right-radius:7px; }}
+    QTabBar::tab:selected {{ background:{p['surface']}; color:{p['primary']}; font-weight:700; }}
+    QLabel#warning {{ color:{p['warningText']}; background:{p['warning']}; border-radius:8px; padding:10px; }}
+    QProgressBar {{ border:0; text-align:center; background:{p['surface2']}; color:{p['text']}; }}
+    QProgressBar::chunk {{ background:{p['primary']}; }}
+    QStatusBar {{ background:{p['surface']}; color:{p['muted']}; border-top:1px solid {p['line']}; }}
+    """
 
 
 class ImageView(QGraphicsView):
@@ -86,62 +97,75 @@ class MainWindow(QMainWindow):
         self.resize(1440, 900)
         self.setMinimumSize(1120, 720)
         self.setAcceptDrops(True)
-        self.setStyleSheet(STYLE)
+        self._theme = "light"
+        self.setStyleSheet(stylesheet(self._theme))
         self._build_ui()
 
     def _build_ui(self) -> None:
         root = QWidget(); layout = QVBoxLayout(root); layout.setContentsMargins(0, 0, 0, 0); layout.setSpacing(0)
-        header = QFrame(objectName="header"); h = QHBoxLayout(header); h.setContentsMargins(24, 14, 24, 14)
+        header = QFrame(objectName="header"); h = QHBoxLayout(header); h.setContentsMargins(24, 12, 24, 12)
         titles = QVBoxLayout(); brand = QLabel("VECTOR UroSight", objectName="brand"); titles.addWidget(brand)
         titles.addWidget(QLabel("Plataforma de apoyo al análisis de sedimento urinario", objectName="subtitle")); h.addLayout(titles); h.addStretch()
-        self._provider_badge = QLabel(self._provider_text()); self._provider_badge.setStyleSheet("color:#7a5610;background:#fff2cd;padding:7px 12px;border-radius:7px;font-weight:700;" if self._service.is_simulated else "color:#08635f;background:#d9f2ed;padding:7px 12px;border-radius:7px;font-weight:700;"); h.addWidget(self._provider_badge)
+        self._stage = QLabel("1 · Preparar estudio", objectName="stage"); h.addWidget(self._stage)
+        self._provider_badge = QLabel(self._provider_text(), objectName="muted"); h.addWidget(self._provider_badge)
+        self._theme_button = QPushButton("◐  Modo oscuro", objectName="quiet"); self._theme_button.clicked.connect(self._toggle_theme); h.addWidget(self._theme_button)
         self._folio = QLabel("NUEVO ESTUDIO", objectName="muted"); h.addWidget(self._folio); layout.addWidget(header)
 
-        workflow = QFrame(objectName="workflow"); steps = QHBoxLayout(workflow); steps.setContentsMargins(24, 8, 24, 8); steps.setSpacing(10)
-        steps.addWidget(QLabel("1  Cargar campos", objectName="stepActive")); steps.addWidget(QLabel("2  Analizar", objectName="step")); steps.addWidget(QLabel("3  Revisar hallazgos", objectName="step")); steps.addWidget(QLabel("4  Exportar reporte", objectName="step")); steps.addStretch(); layout.addWidget(workflow)
-
-        toolbar = QHBoxLayout(); toolbar.setContentsMargins(18, 12, 18, 12); toolbar.setSpacing(8)
-        toolbar.addWidget(QLabel("Paciente (opcional):")); self._patient_name = QLineEdit(); self._patient_name.setPlaceholderText("Nombre completo"); self._patient_name.setMaximumWidth(220); toolbar.addWidget(self._patient_name)
-        self._patient_id = QLabel(self._patient_id_value, objectName="muted"); self._patient_id.setToolTip("Identificador aleatorio generado; no contiene datos del paciente."); toolbar.addWidget(self._patient_id)
-        for text, slot in (("+ Imágenes", self._select_images), ("+ Carpeta", self._select_folder)):
-            button = QPushButton(text); button.clicked.connect(slot); toolbar.addWidget(button)
-        self._analyze_button = QPushButton("Analizar estudio →", objectName="primary"); self._analyze_button.setToolTip("Procesa todos los campos cargados con el modelo YOLO local."); self._analyze_button.clicked.connect(self._analyze); toolbar.addWidget(self._analyze_button)
-        self._cancel_button = QPushButton("Cancelar"); self._cancel_button.clicked.connect(self._cancel); self._cancel_button.hide(); toolbar.addWidget(self._cancel_button)
-        self._experimental_preprocess = QCheckBox("Mejora experimental de imagen"); self._experimental_preprocess.setToolTip("Opcional: CLAHE, ajuste moderado y reducción ligera de ruido. Nunca modifica los originales."); toolbar.addWidget(self._experimental_preprocess)
-        toolbar.addStretch(); self._export_button = QPushButton("Exportar reporte"); self._export_button.setToolTip("Disponible al finalizar el análisis."); self._export_button.clicked.connect(self._export); self._export_button.setEnabled(False); toolbar.addWidget(self._export_button)
-        layout.addLayout(toolbar)
-
-        splitter = QSplitter(); splitter.setChildrenCollapsible(False)
-        sidebar = QFrame(); side = QVBoxLayout(sidebar); side.setContentsMargins(14, 12, 10, 12); side.addWidget(QLabel("CAMPOS DEL ESTUDIO", objectName="muted"))
+        splitter = QSplitter(); splitter.setChildrenCollapsible(False); splitter.setContentsMargins(14, 14, 14, 10)
+        sidebar = QFrame(); sidebar.setProperty("card", "true"); side = QVBoxLayout(sidebar); side.setContentsMargins(14, 14, 14, 14); side.setSpacing(10)
+        side.addWidget(QLabel("Preparar estudio", objectName="section")); side.addWidget(QLabel("Paciente (opcional)", objectName="muted"))
+        self._patient_name = QLineEdit(); self._patient_name.setPlaceholderText("Nombre completo"); side.addWidget(self._patient_name)
+        self._patient_id = QLabel(self._patient_id_value, objectName="muted"); self._patient_id.setToolTip("Identificador aleatorio; no contiene datos del paciente."); side.addWidget(self._patient_id)
+        load_row = QHBoxLayout(); images = QPushButton("＋ Imágenes"); images.clicked.connect(self._select_images); folder = QPushButton("＋ Carpeta"); folder.clicked.connect(self._select_folder); load_row.addWidget(images); load_row.addWidget(folder); side.addLayout(load_row)
+        side.addWidget(QLabel("Campos cargados", objectName="section"))
         self._files = QListWidget(); self._files.setIconSize(QSize(74, 54)); self._files.currentRowChanged.connect(self._select_analysis); side.addWidget(self._files)
-        self._file_hint = QLabel("También puede arrastrar imágenes aquí", objectName="muted"); self._file_hint.setWordWrap(True); side.addWidget(self._file_hint); splitter.addWidget(sidebar)
+        self._file_hint = QLabel("Arrastre aquí imágenes o una carpeta", objectName="muted"); self._file_hint.setAlignment(Qt.AlignCenter); self._file_hint.setWordWrap(True); side.addWidget(self._file_hint)
+        self._analyze_button = QPushButton("Analizar estudio", objectName="primary"); self._analyze_button.setToolTip("Procesa todos los campos con el modelo local."); self._analyze_button.clicked.connect(self._analyze); self._analyze_button.setEnabled(False); side.addWidget(self._analyze_button)
+        self._cancel_button = QPushButton("Cancelar análisis"); self._cancel_button.clicked.connect(self._cancel); self._cancel_button.hide(); side.addWidget(self._cancel_button); splitter.addWidget(sidebar)
 
-        center = QFrame(); center_layout = QVBoxLayout(center); center_layout.setContentsMargins(14, 12, 14, 12)
-        viewer_tools = QHBoxLayout(); self._view_mode = QComboBox(); self._view_mode.addItems(["Imagen anotada", "Imagen original"]); self._view_mode.currentIndexChanged.connect(self._refresh_view); viewer_tools.addWidget(self._view_mode)
-        self._annotations = QCheckBox("Mostrar anotaciones"); self._annotations.setChecked(True); self._annotations.toggled.connect(self._refresh_view); viewer_tools.addWidget(self._annotations)
-        self._audit_mode = QCheckBox("Modo de auditoría"); self._audit_mode.toggled.connect(self._audit_toggled); viewer_tools.addWidget(self._audit_mode)
-        viewer_tools.addWidget(QLabel("Umbral:")); self._threshold = QDoubleSpinBox(); self._threshold.setRange(0, 1); self._threshold.setSingleStep(.05); self._threshold.setDecimals(2); self._threshold.setValue(self._service.confidence_threshold); self._threshold.valueChanged.connect(self._threshold_changed); viewer_tools.addWidget(self._threshold)
-        viewer_tools.addStretch(); viewer_tools.addWidget(QLabel("Filtrar:")); self._class_filter = QComboBox(); self._class_filter.addItem("Todas las clases"); self._class_filter.currentIndexChanged.connect(self._refresh_view); viewer_tools.addWidget(self._class_filter); center_layout.addLayout(viewer_tools)
-        zoom_tools = QHBoxLayout(); self._legend = QLabel("Leyenda: sin clases visibles", objectName="muted"); self._legend.setStyleSheet("color:#9eb9c4;"); zoom_tools.addWidget(self._legend); zoom_tools.addStretch()
+        center = QFrame(); center.setProperty("card", "true"); center_layout = QVBoxLayout(center); center_layout.setContentsMargins(14, 14, 14, 14); center_layout.setSpacing(9)
+        viewer_tools = QHBoxLayout(); viewer_tools.addWidget(QLabel("Campo seleccionado", objectName="section")); viewer_tools.addStretch()
+        self._view_mode = QComboBox(); self._view_mode.addItems(["Vista anotada", "Vista original"]); self._view_mode.currentIndexChanged.connect(self._refresh_view); viewer_tools.addWidget(self._view_mode)
+        self._class_filter = QComboBox(); self._class_filter.addItem("Todas las clases"); self._class_filter.currentIndexChanged.connect(self._refresh_view); viewer_tools.addWidget(self._class_filter); center_layout.addLayout(viewer_tools)
+        zoom_tools = QHBoxLayout(); self._legend = QLabel("Sin hallazgos para mostrar", objectName="muted"); zoom_tools.addWidget(self._legend); zoom_tools.addStretch()
         for text, factor in (("−", .8), ("+", 1.25)):
             button = QPushButton(text); button.setFixedWidth(38); button.clicked.connect(lambda _=False, value=factor: self._viewer.zoom(value)); zoom_tools.addWidget(button)
-        reset = QPushButton("Restaurar vista"); reset.clicked.connect(self._reset_view); zoom_tools.addWidget(reset); center_layout.addLayout(zoom_tools)
-        self._viewer = ImageView(); center_layout.addWidget(self._viewer, 1)
+        reset = QPushButton("Ajustar"); reset.clicked.connect(self._reset_view); zoom_tools.addWidget(reset); center_layout.addLayout(zoom_tools)
+        self._viewer = ImageView(); center_layout.addWidget(self._viewer, 3)
         self._field_details = QLabel("Seleccione un campo para consultar sus resultados.", objectName="muted"); self._field_details.setWordWrap(True); center_layout.addWidget(self._field_details)
+        tabs = QTabWidget()
+        findings = QWidget(); findings_layout = QVBoxLayout(findings); findings_layout.setContentsMargins(8, 8, 8, 8)
         self._detections = QTableWidget(0, 7); self._detections.setHorizontalHeaderLabels(["Clase original", "Clase normalizada", "Confianza", "Caja", "Estado", "Revisión", "Corrección"]); self._detections.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch); self._detections.setEditTriggers(QAbstractItemView.NoEditTriggers); center_layout.addWidget(self._detections, 1)
-        review_tools = QHBoxLayout(); review_tools.addWidget(QLabel("Revisión humana:")); self._review_status = QComboBox(); self._review_status.addItems(["correcta", "incorrecta", "clase_equivocada", "elemento_omitido"]); review_tools.addWidget(self._review_status); self._corrected_class = QComboBox(); self._corrected_class.setEditable(True); review_tools.addWidget(self._corrected_class); apply_review = QPushButton("Guardar revisión"); apply_review.clicked.connect(self._apply_review); review_tools.addWidget(apply_review); center_layout.addLayout(review_tools); splitter.addWidget(center)
+        review_tools = QHBoxLayout(); review_tools.addWidget(QLabel("Revisión humana:")); self._review_status = QComboBox(); self._review_status.addItems(["correcta", "incorrecta", "clase_equivocada", "elemento_omitido"]); review_tools.addWidget(self._review_status); self._corrected_class = QComboBox(); self._corrected_class.setEditable(True); review_tools.addWidget(self._corrected_class); apply_review = QPushButton("Guardar revisión"); apply_review.clicked.connect(self._apply_review); review_tools.addWidget(apply_review)
+        center_layout.removeWidget(self._detections); findings_layout.addWidget(self._detections); findings_layout.addLayout(review_tools); tabs.addTab(findings, "Hallazgos")
+        advanced = QWidget(); advanced_layout = QVBoxLayout(advanced); advanced_layout.setContentsMargins(16, 14, 16, 14)
+        self._annotations = QCheckBox("Mostrar anotaciones sobre la imagen"); self._annotations.setChecked(True); self._annotations.toggled.connect(self._refresh_view); advanced_layout.addWidget(self._annotations)
+        self._audit_mode = QCheckBox("Mostrar detecciones descartadas (auditoría)"); self._audit_mode.toggled.connect(self._audit_toggled); advanced_layout.addWidget(self._audit_mode)
+        threshold_row = QHBoxLayout(); threshold_row.addWidget(QLabel("Umbral de confianza")); self._threshold = QDoubleSpinBox(); self._threshold.setRange(0, 1); self._threshold.setSingleStep(.05); self._threshold.setDecimals(2); self._threshold.setValue(self._service.confidence_threshold); self._threshold.valueChanged.connect(self._threshold_changed); threshold_row.addWidget(self._threshold); threshold_row.addStretch(); advanced_layout.addLayout(threshold_row)
+        self._experimental_preprocess = QCheckBox("Aplicar mejora experimental de imagen antes del análisis"); self._experimental_preprocess.setToolTip("CLAHE y reducción ligera de ruido; nunca modifica originales."); advanced_layout.addWidget(self._experimental_preprocess); advanced_layout.addStretch(); tabs.addTab(advanced, "Opciones avanzadas")
+        center_layout.addWidget(tabs, 2); splitter.addWidget(center)
         self._detections.cellClicked.connect(self._detection_selected)
 
-        results = QFrame(); results_layout = QVBoxLayout(results); results_layout.setContentsMargins(10, 12, 14, 12); results_layout.addWidget(QLabel("RESUMEN DEL ESTUDIO", objectName="muted"))
+        results = QFrame(); results.setProperty("card", "true"); results_layout = QVBoxLayout(results); results_layout.setContentsMargins(14, 14, 14, 14); results_layout.setSpacing(10); results_layout.addWidget(QLabel("Resumen del estudio", objectName="section"))
         cards = QGridLayout(); self._count_card = self._card(cards, "Detecciones", 0, 0); self._confidence_card = self._card(cards, "Score promedio", 0, 1); self._time_card = self._card(cards, "Tiempo total", 1, 0); self._images_card = self._card(cards, "Campos procesados", 1, 1); results_layout.addLayout(cards)
         self._summary = QTableWidget(0, 3); self._summary.setHorizontalHeaderLabels(["Clase", "Total", "Promedio/campo"]); self._summary.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch); self._summary.setEditTriggers(QAbstractItemView.NoEditTriggers); results_layout.addWidget(self._summary)
-        results_layout.addWidget(QLabel("INTERPRETACIÓN ORIENTATIVA", objectName="muted")); self._interpretation = QTextEdit(); self._interpretation.setReadOnly(True); self._interpretation.setPlaceholderText("Los hallazgos aparecerán después del análisis."); results_layout.addWidget(self._interpretation)
-        warning = QLabel("USO ACADÉMICO · Confirme visualmente cada hallazgo. No sustituye el criterio profesional."); warning.setWordWrap(True); warning.setStyleSheet("color:#725210;padding:9px;background:#fff3d6;border:1px solid #efd89c;border-radius:7px;"); results_layout.addWidget(warning); splitter.addWidget(results)
-        splitter.setSizes([235, 780, 390]); layout.addWidget(splitter, 1)
+        results_layout.addWidget(QLabel("Interpretación orientativa", objectName="section")); self._interpretation = QTextEdit(); self._interpretation.setReadOnly(True); self._interpretation.setPlaceholderText("Los hallazgos aparecerán al terminar el análisis."); results_layout.addWidget(self._interpretation)
+        warning = QLabel("USO ACADÉMICO · Confirme visualmente cada hallazgo. No sustituye el criterio profesional."); warning.setObjectName("warning"); warning.setWordWrap(True); results_layout.addWidget(warning)
+        self._export_button = QPushButton("Exportar reporte", objectName="primary"); self._export_button.clicked.connect(self._export); self._export_button.setEnabled(False); results_layout.addWidget(self._export_button); splitter.addWidget(results)
+        splitter.setSizes([255, 820, 350]); layout.addWidget(splitter, 1)
         self._progress = QProgressBar(); self._progress.hide(); layout.addWidget(self._progress)
         self.setStatusBar(QStatusBar()); self.statusBar().showMessage("Seleccione imágenes para comenzar.")
         self.setCentralWidget(root)
         self._audit_toggled(False)
+
+    def _toggle_theme(self) -> None:
+        self._theme = "dark" if self._theme == "light" else "light"
+        self.setStyleSheet(stylesheet(self._theme))
+        self._theme_button.setText("☀  Modo claro" if self._theme == "dark" else "◐  Modo oscuro")
+        self._viewer.setStyleSheet(f"background:{'#0B1419' if self._theme == 'dark' else '#E7EFF2'};border:1px solid {PALETTES[self._theme]['line']};border-radius:9px;")
+
+    def _set_stage(self, number: int, label: str) -> None:
+        self._stage.setText(f"{number} · {label}")
 
     def _provider_text(self) -> str:
         return ("MODO DEMOSTRACIÓN - RESULTADOS SIMULADOS" if self._service.is_simulated
@@ -149,7 +173,7 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def _card(layout: QGridLayout, title: str, row: int, col: int) -> QLabel:
-        frame = QFrame(); frame.setProperty("class", "card"); box = QVBoxLayout(frame); box.addWidget(QLabel(title, objectName="muted")); value = QLabel("—"); value.setStyleSheet("font-size:20px;font-weight:700;color:#123d4a;"); box.addWidget(value); layout.addWidget(frame, row, col); return value
+        frame = QFrame(); frame.setProperty("card", "true"); box = QVBoxLayout(frame); box.addWidget(QLabel(title, objectName="muted")); value = QLabel("—"); value.setStyleSheet("font-size:20px;font-weight:700;"); box.addWidget(value); layout.addWidget(frame, row, col); return value
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         if event.mimeData().hasUrls(): event.acceptProposedAction()
@@ -177,6 +201,7 @@ class MainWindow(QMainWindow):
             valid, reason = self._service.validate_image(path)
             (accepted if valid else rejected).append(path if valid else f"{path.name}: {reason}")
         self._selected_paths, self._source, self._result = accepted, source, None; self._files.clear(); self._export_button.setEnabled(False)
+        self._analyze_button.setEnabled(bool(accepted)); self._set_stage(2 if accepted else 1, "Listo para analizar" if accepted else "Preparar estudio")
         self._patient_id_value = generate_patient_id(); self._patient_id.setText(self._patient_id_value)
         for path in accepted:
             item = QListWidgetItem(QIcon(str(path)), path.name); item.setToolTip(str(path)); self._files.addItem(item)
@@ -199,6 +224,7 @@ class MainWindow(QMainWindow):
         self._thread.started.connect(self._worker.run); self._worker.progress.connect(self._on_progress); self._worker.completed.connect(self._on_completed); self._worker.failed.connect(lambda message: QMessageBox.critical(self, "Error de análisis", message)); self._worker.finished.connect(self._finish_worker); self._worker.finished.connect(self._thread.quit)
         self._thread.finished.connect(self._thread_finished)
         self._analyze_button.setEnabled(False); self._cancel_button.show(); self._progress.setRange(0, len(self._selected_paths)); self._progress.setValue(0); self._progress.show(); self._thread.start()
+        self._set_stage(2, "Analizando campos")
 
     def _cancel(self) -> None:
         if self._worker: self._worker.cancel(); self.statusBar().showMessage("Cancelación solicitada…")
@@ -220,6 +246,7 @@ class MainWindow(QMainWindow):
         for image in result.images: image.processing_variant = self._active_variant
         if self._active_variant == "original": self._last_original_result = result
         self._result = result; self._folio.setText(f"FOLIO {result.study_id}"); self._export_button.setEnabled(True)
+        self._set_stage(3, "Revisar hallazgos")
         result.confidence_threshold = self._threshold.value()
         self._update_study_results()
         self._files.setCurrentRow(0); self._select_analysis(0); self.statusBar().showMessage(f"Análisis finalizado. {len(result.failed_images)} campo(s) con error.")
@@ -311,6 +338,7 @@ class MainWindow(QMainWindow):
             if "JSON" in selected: path = path.with_suffix(".json"); export_json(self._result, path)
             elif "CSV" in selected: path = path.with_suffix(".csv"); export_csv(self._result, path)
             else: path = path.with_suffix(".pdf"); generate_pdf(self._result, path)
+            self._set_stage(4, "Reporte exportado")
             self.statusBar().showMessage(f"Archivo exportado: {path}")
         except Exception as exc: QMessageBox.critical(self, "No se pudo exportar", str(exc))
 

@@ -4,7 +4,9 @@ Set-Location -LiteralPath $projectRoot
 
 python -m PyInstaller --noconfirm --clean --windowed `
   --name VECTOR_UroSight `
+  --icon "assets/vector_urosight_icon.ico" `
   --add-data "models/vector_urosight/best.pt;models/vector_urosight" `
+  --add-data "assets/vector_urosight_icon.png;assets" `
   --collect-data ultralytics `
   --collect-all matplotlib `
   --collect-all torchvision `

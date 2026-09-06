@@ -41,6 +41,13 @@ def metrics_payload(metrics, names: dict[int, str], *, split: str, confidence: f
         "fitness": float(metrics.fitness),
         "speed_ms_per_image": {key: float(value) for key, value in metrics.speed.items()},
     }
+    f1_curve = getattr(box, "f1_curve", None)
+    confidence_axis = getattr(box, "px", None)
+    if f1_curve is not None and confidence_axis is not None and len(confidence_axis):
+        mean_f1 = f1_curve.mean(0)
+        best_index = int(mean_f1.argmax())
+        summary["best_f1"] = float(mean_f1[best_index])
+        summary["recommended_confidence"] = float(confidence_axis[best_index])
     return summary, per_class
 
 

@@ -20,7 +20,7 @@ load_dotenv(user_configuration_root() / ".env")
 
 
 def _confidence_from_env() -> float:
-    raw = os.getenv("CONFIDENCE_THRESHOLD", "0.25")
+    raw = os.getenv("CONFIDENCE_THRESHOLD", "0.44")
     try:
         value = float(raw)
     except ValueError as exc:

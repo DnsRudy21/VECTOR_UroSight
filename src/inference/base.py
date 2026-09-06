@@ -7,7 +7,7 @@ from src.domain.models import ImageAnalysis
 class InferenceProvider(ABC):
     display_name = "Proveedor desconocido"
     is_simulated = False
-    confidence_threshold = 0.25
+    confidence_threshold = 0.44
 
     @abstractmethod
     def predict(self, image_path: Path) -> ImageAnalysis:

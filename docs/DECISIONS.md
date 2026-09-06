@@ -96,5 +96,8 @@ PySide6 6.11.1 produjo un fallo de carga de `QtWidgets` únicamente dentro del e
 ## D-036 — Inferencia aumentada a 448 px
 La configuración de 480 px redujo de 48 a 36 las detecciones visibles respecto al portable anterior sobre cinco imágenes sintéticas. Sin usar esas imágenes sin ground truth para seleccionar métricas, se exploraron resoluciones finas y aumento exclusivamente en validation. 448 px con aumento obtuvo precision 0.778917, recall 0.796293, mAP@50 0.810809 y mAP@50–95 0.470846. Congelada la configuración, test obtuvo 0.771033, 0.815977, 0.835967 y 0.487220, respectivamente. En las cinco imágenes sintéticas recuperó 86 detecciones y un score medio de 0.5339; esto es una comprobación operativa, no evidencia de exactitud.
 
+## D-037 — Promoción controlada de YOLO11s dirigido
+Se entrenó YOLO11s durante 15 épocas con 4,177 imágenes originales y 2,036 teselas dirigidas generadas únicamente desde train; validation (848) y test (268) permanecieron sin cambios. La época 13 superó al campeón anterior en validation homogénea a 448 px con aumento: precision 0.825059, recall 0.815430, mAP@50 0.867705 y mAP@50–95 0.509357. El umbral 0.443443 se obtuvo del máximo F1 medio de validation (0.821226). Solo después se abrió test: precision 0.808721, recall 0.813571, mAP@50 0.854268 y mAP@50–95 0.494546. Se promovió el nuevo checkpoint; el campeón anterior quedó preservado como respaldo.
+
 ## D-037 — Operación exclusivamente local
 La integración remota se retiró por completo del código, configuración, dependencias, pruebas y documentación activa. El portable usa exclusivamente el checkpoint YOLO incluido y no necesita Internet. El proveedor simulado se conserva solo para desarrollo y se identifica inequívocamente en pantalla y exportaciones.

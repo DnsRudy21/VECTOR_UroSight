@@ -55,11 +55,12 @@ flowchart LR
 
 ### Resultados experimentales
 
-El checkpoint final es YOLO11n, entrenado a 320 px durante 30 épocas. La configuración de operación usa inferencia aumentada a 448 px y umbral 0.25, seleccionados exclusivamente sobre validación; no se reentrenó ni ajustó con test.
+El checkpoint final es YOLO11s, ajustado durante 15 épocas sobre el conjunto de entrenamiento canónico y teselas dirigidas de clases minoritarias. La época 13 fue seleccionada exclusivamente con validation. La operación usa inferencia aumentada a 448 px y umbral 0.44 (óptimo de F1 en validation); test permaneció aislado hasta congelar esta configuración.
 
 | Evaluación | Precision | Recall | mAP@50 | mAP@50–95 |
 |---|---:|---:|---:|---:|
-| Test interno USE (448 px, inferencia aumentada) | 0.7710 | 0.8160 | 0.8360 | 0.4872 |
+| Validation USE (448 px, inferencia aumentada) | 0.825059 | 0.815430 | 0.867705 | 0.509357 |
+| Test interno USE (448 px, inferencia aumentada) | 0.808721 | 0.813571 | 0.854268 | 0.494546 |
 | Evaluación externa UMID | 0.5238 | 0.1199 | 0.0685 | 0.0348 |
 
 La caída en UMID muestra un **cambio de dominio severo**. Estas métricas describen un experimento reproducible; no demuestran desempeño clínico ni generalización a otros laboratorios, microscopios o protocolos.
@@ -94,7 +95,7 @@ python -m pip install -r requirements-local.txt
 ```dotenv
 INFERENCE_PROVIDER=local
 LOCAL_MODEL_PATH=models/vector_urosight/best.pt
-CONFIDENCE_THRESHOLD=0.25
+CONFIDENCE_THRESHOLD=0.44
 ```
 
 La inferencia no realiza solicitudes a servicios externos. Una vez instalado y con `best.pt` presente, el programa funciona sin conexión a Internet.
@@ -174,7 +175,8 @@ Its core principle is simple: automated output must remain **reviewable, explain
 
 | Evaluation | Precision | Recall | mAP@50 | mAP@50–95 |
 |---|---:|---:|---:|---:|
-| Internal USE test (448 px, augmented inference) | 0.7710 | 0.8160 | 0.8360 | 0.4872 |
+| Internal USE validation (448 px, augmented inference) | 0.825059 | 0.815430 | 0.867705 | 0.509357 |
+| Internal USE test (448 px, augmented inference) | 0.808721 | 0.813571 | 0.854268 | 0.494546 |
 | External UMID evaluation | 0.5238 | 0.1199 | 0.0685 | 0.0348 |
 
 The external result shows severe domain shift. VECTOR UroSight is **not a diagnostic device, is not clinically validated, and must not replace professional laboratory review**.
