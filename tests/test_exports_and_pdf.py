@@ -4,7 +4,7 @@ from PIL import Image
 from pypdf import PdfReader
 
 from src.inference.mock_provider import MockInferenceProvider
-from src.reports.pdf_report import generate_pdf
+from src.reports.pdf_report import export_annotated_images, generate_pdf
 from src.services.analysis_service import AnalysisService
 from src.services.export_service import export_csv, export_json
 
@@ -18,6 +18,7 @@ def test_structured_exports_and_readable_pdf(tmp_path):
     json_path = export_json(result, tmp_path / "result.json")
     csv_path = export_csv(result, tmp_path / "result.csv")
     pdf_path = generate_pdf(result, tmp_path / "report.pdf")
+    annotated = export_annotated_images(result, tmp_path / "annotated")
     assert json.loads(json_path.read_text(encoding="utf-8"))["study_id"] == result.study_id
     assert json.loads(json_path.read_text(encoding="utf-8"))["patient"] == {
         "id": "PT-20260819-ABC123", "name": "Paciente de prueba"
@@ -33,3 +34,7 @@ def test_structured_exports_and_readable_pdf(tmp_path):
     assert "Demostración simulada" in text
     assert "RESULTADOS SIMULADOS" in text
     assert len(reader.pages) >= 2
+    assert len(annotated) == 1
+    assert annotated[0].is_file()
+    with Image.open(annotated[0]) as exported:
+        assert exported.size == (640, 480)

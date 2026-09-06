@@ -32,12 +32,12 @@ El diseño sigue una idea central: toda salida automatizada debe ser **revisable
 
 | Área | Funcionalidad |
 |---|---|
-| Interfaz | Flujo multimagen en PySide6, arrastrar y soltar, filtros y revisión visual |
-| Inferencia | YOLO local; modo de demostración separado para desarrollo y pruebas |
+| Interfaz | Flujo minimalista multimagen, temas claro/oscuro, arrastrar y soltar, filtros y revisión visual |
+| Inferencia | YOLO11s integrado y ejecutado sin conexión; modo de demostración separado para pruebas |
 | Trazabilidad | Clase original y normalizada, confianza, caja, modelo, umbral e imagen fuente |
 | Revisión humana | Marcar detecciones correctas, incorrectas, clase equivocada o elementos omitidos |
 | Calidad | Alertas técnicas de brillo, contraste y nitidez sin emitir conclusiones clínicas |
-| Reportes | PDF profesional y exportaciones estructuradas CSV/JSON |
+| Reportes | PDF clínico, estadísticas, imágenes anotadas y exportaciones CSV/JSON |
 | Arquitectura | GUI, dominio, inferencia, reglas, procesamiento y reportes desacoplados |
 
 ### Flujo técnico
@@ -46,11 +46,11 @@ El diseño sigue una idea central: toda salida automatizada debe ser **revisable
 flowchart LR
     A["Imágenes microscópicas"] --> B["Interfaz PySide6"]
     B --> C["Servicio de análisis"]
-    C --> D["YOLO local"]
+    C --> D["YOLO11s integrado"]
     C -. desarrollo .-> E["Mock explícito"]
     D --> H["Normalización y reglas auditables"]
     H --> I["Revisión humana"]
-    I --> J["PDF · CSV · JSON"]
+    I --> J["PDF · imágenes anotadas · CSV · JSON"]
 ```
 
 ### Resultados experimentales
@@ -84,7 +84,7 @@ python -m pip install -r requirements.txt
 python -m src.main
 ```
 
-#### Modelo YOLO local
+#### Modelo YOLO11s sin conexión
 
 Los pesos no se distribuyen en el repositorio. Instale las dependencias opcionales, copie `.env.example` como `.env` y configure una ruta local compatible:
 
@@ -107,7 +107,7 @@ python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-La versión candidata pasa **51 pruebas automatizadas**. El flujo de integración continua repite la suite en Python 3.11 para cada `push` y `pull request`.
+La versión candidata pasa **43 pruebas automatizadas**. El flujo de integración continua repite la suite en Python 3.11 para cada `push` y `pull request`.
 
 ### Datos, privacidad y artefactos
 
@@ -163,13 +163,13 @@ Its core principle is simple: automated output must remain **reviewable, explain
 
 ### Key features
 
-- Multi-image PySide6 workflow with visual review and filtering.
+- Minimal multi-image PySide6 workflow with light/dark themes, visual review, and filtering.
 - Fully local YOLO inference; an explicit mock remains only for development and automated tests.
 - Traceability for raw/normalized class, confidence, box, model, threshold, and source image.
 - Human review for incorrect classes, rejected detections, and omitted elements.
 - Explicit rules and technical image-quality warnings.
-- Structured PDF, CSV, and JSON exports.
-- Modular architecture with 51 automated tests and GitHub Actions CI.
+- Clinical PDF, statistics, annotated images, CSV, and JSON exports.
+- Modular architecture with 43 automated tests and GitHub Actions CI.
 
 ### Experimental status
 

@@ -3,7 +3,7 @@ from src.domain.models import BoundingBox, Detection, ImageAnalysis
 from src.inference.base import InferenceProvider
 
 class LocalYoloProvider(InferenceProvider):
-    display_name = "YOLO local"
+    display_name = "YOLO11s"
     is_simulated = False
     def __init__(self, model_path: Path, confidence: float = 0.44, imgsz: int = 448,
                  augment: bool = True) -> None:

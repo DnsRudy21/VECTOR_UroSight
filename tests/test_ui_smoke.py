@@ -13,6 +13,7 @@ def test_main_window_starts(qtbot):
     assert window._theme == "light"
     window._toggle_theme()
     assert window._theme == "dark"
-    assert "Modo claro" in window._theme_button.text()
-    assert window._export_button.text() == "Exportar reporte"
+    assert window._theme_switch._dark
+    assert window._export_button.text() == "Exportar ▾"
+    assert len(window._export_button.menu().actions()) == 5
     assert window.minimumWidth() >= 1120

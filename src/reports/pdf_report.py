@@ -5,6 +5,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
+from reportlab.graphics.shapes import Drawing, Rect, String
 from reportlab.platypus import Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from src.domain.models import ImageAnalysis, StudyResult
@@ -27,6 +28,14 @@ def _footer(canvas, doc) -> None:
     canvas.drawRightString(A4[0]-1.5*cm, .75*cm, f"Página {doc.page}"); canvas.restoreState()
 
 
+def _page_header(styles) -> Table:
+    data = [[Paragraph("<font color='#FFFFFF'><b>VECTOR UroSight</b></font>", styles["BodyText"]),
+             Paragraph("<font color='#FFFFFF'>REPORTE DE ANÁLISIS ASISTIDO</font>", styles["BodyText"])]]
+    header = Table(data, colWidths=[10.5*cm, 6.5*cm])
+    header.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),NAVY),("ALIGN",(1,0),(1,0),"RIGHT"),("VALIGN",(0,0),(-1,-1),"MIDDLE"),("LEFTPADDING",(0,0),(-1,-1),12),("RIGHTPADDING",(0,0),(-1,-1),12),("TOPPADDING",(0,0),(-1,-1),10),("BOTTOMPADDING",(0,0),(-1,-1),10)]))
+    return header
+
+
 def _table(data, widths, header=False) -> Table:
     table = Table(data, colWidths=widths, repeatRows=1 if header else 0, hAlign="LEFT")
     style = [("GRID", (0,0), (-1,-1), .35, colors.HexColor("#B8CBD2")),
@@ -46,11 +55,11 @@ def _field_counts(result: StudyResult, analysis: ImageAnalysis) -> str:
     return ", ".join(f"{name.replace('_', ' ')}: {total}" for name, total in sorted(counts.items())) or "Sin detecciones aceptadas"
 
 
-def _annotated_preview(result: StudyResult, analysis: ImageAnalysis, output_path: Path) -> Path:
+def annotated_image(result: StudyResult, analysis: ImageAnalysis, output_path: Path, *, preview: bool = False) -> Path:
     with PILImage.open(analysis.image_path) as source:
-        preview = source.convert("RGB"); draw = ImageDraw.Draw(preview)
-        font = ImageFont.load_default(size=max(14, preview.width // 55))
-        line_width = max(3, preview.width // 250)
+        rendered = source.convert("RGB"); draw = ImageDraw.Draw(rendered)
+        font = ImageFont.load_default(size=max(14, rendered.width // 55))
+        line_width = max(3, rendered.width // 250)
         for detection in result.detections_for(analysis):
             box = detection.bbox; bounds = (box.x-box.width/2, box.y-box.height/2, box.x+box.width/2, box.y+box.height/2)
             color = CLASS_HEX.get(detection.class_name, "#377DCE")
@@ -60,35 +69,63 @@ def _annotated_preview(result: StudyResult, analysis: ImageAnalysis, output_path
             label_y = max(0, int(bounds[1])-(bottom-top)-8)
             draw.rectangle((bounds[0], label_y, bounds[0]+right-left+10, label_y+bottom-top+6), fill=color)
             draw.text((bounds[0]+5, label_y+2), label, font=font, fill="white")
-        preview.thumbnail((1500, 1050)); preview.save(output_path, "PNG")
+        if preview: rendered.thumbnail((1500, 1050))
+        rendered.save(output_path, "PNG")
     return output_path
+
+
+def export_annotated_images(result: StudyResult, output_dir: Path) -> list[Path]:
+    output_dir.mkdir(parents=True, exist_ok=True); exported = []
+    for analysis in result.successful_images:
+        path = output_dir / f"{analysis.image_path.stem}_anotada.png"
+        exported.append(annotated_image(result, analysis, path))
+    return exported
+
+
+def _distribution_chart(counts: dict[str, int], width: float = 470, height: float | None = None) -> Drawing:
+    height = height or max(65, len(counts) * 19 + 12)
+    drawing = Drawing(width, height); maximum = max(counts.values(), default=1); y = height - 20
+    for name, total in sorted(counts.items(), key=lambda item: item[1], reverse=True):
+        label = name.replace("_", " ").title()[:23]; color = colors.HexColor(CLASS_HEX.get(name, "#169E91"))
+        drawing.add(String(0, y, label, fontName="Helvetica", fontSize=8, fillColor=NAVY))
+        drawing.add(Rect(120, y - 2, 285 * total / maximum, 10, rx=4, ry=4, fillColor=color, strokeColor=None))
+        drawing.add(String(415, y, str(total), fontName="Helvetica-Bold", fontSize=8, fillColor=NAVY)); y -= 19
+    return drawing
 
 
 def generate_pdf(result: StudyResult, output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     doc = SimpleDocTemplate(str(output_path), pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm,
-                            topMargin=1.35*cm, bottomMargin=1.5*cm, title=f"VECTOR UroSight - {result.study_id}")
+                            topMargin=1.0*cm, bottomMargin=1.5*cm, title=f"VECTOR UroSight - {result.study_id}")
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle("Brand", parent=styles["Title"], fontName="Helvetica-Bold", fontSize=22, textColor=NAVY, spaceAfter=2))
     styles.add(ParagraphStyle("Sub", parent=styles["Normal"], fontSize=10, textColor=MUTED, spaceAfter=12))
     styles.add(ParagraphStyle("Notice", parent=styles["BodyText"], backColor=colors.HexColor("#FFF3C9"), borderColor=AMBER, borderWidth=.6, borderPadding=8, leading=13, spaceAfter=8))
     styles.add(ParagraphStyle("Demo", parent=styles["BodyText"], backColor=colors.HexColor("#FFE5A8"), borderColor=AMBER, borderWidth=1, borderPadding=9, textColor=colors.HexColor("#5A3D00"), fontName="Helvetica-Bold", alignment=1, spaceAfter=10))
-    story = [Paragraph("VECTOR UroSight", styles["Brand"]), Paragraph("Plataforma de apoyo al análisis de imágenes de sedimento urinario", styles["Sub"])]
+    styles.add(ParagraphStyle("Section", parent=styles["Heading2"], fontName="Helvetica-Bold", fontSize=13, textColor=NAVY, spaceBefore=8, spaceAfter=7))
+    styles.add(ParagraphStyle("Kpi", parent=styles["BodyText"], fontName="Helvetica-Bold", fontSize=17, textColor=NAVY, leading=20, alignment=1))
+    story = [_page_header(styles), Spacer(1, 14), Paragraph("Resumen del estudio", styles["Brand"]), Paragraph(f"Folio {result.study_id} · Generado {result.created_at.strftime('%d/%m/%Y %H:%M')}", styles["Sub"])]
     if result.is_simulated: story.append(Paragraph("MODO DEMOSTRACIÓN - RESULTADOS SIMULADOS", styles["Demo"]))
     patient_name = result.patient_name or "No capturado"
     meta = [[Paragraph("ID de paciente", styles["BodyText"]), Paragraph(result.patient_id, styles["BodyText"]),
              Paragraph("Paciente", styles["BodyText"]), Paragraph(patient_name, styles["BodyText"])],
             [Paragraph("Folio interno", styles["BodyText"]), Paragraph(result.study_id, styles["BodyText"]),
              Paragraph("Fecha y hora", styles["BodyText"]), Paragraph(result.created_at.strftime("%Y-%m-%d %H:%M"), styles["BodyText"])],
-            [Paragraph("Proveedor activo", styles["BodyText"]), Paragraph(result.provider_name, styles["BodyText"]),
+            [Paragraph("Motor de análisis", styles["BodyText"]), Paragraph("Demostración simulada" if result.is_simulated else "YOLO11s", styles["BodyText"]),
              Paragraph("Umbral", styles["BodyText"]), Paragraph(f"{result.confidence_threshold:.0%}", styles["BodyText"])],
             [Paragraph("Campos procesados", styles["BodyText"]), Paragraph(str(len(result.successful_images)), styles["BodyText"]),
              Paragraph("Campos con error", styles["BodyText"]), Paragraph(str(len(result.failed_images)), styles["BodyText"])],
             [Paragraph("Origen", styles["BodyText"]), Paragraph(result.source or "No especificado", styles["BodyText"]),
              Paragraph("Tiempo de inferencia", styles["BodyText"]), Paragraph("No aplica - tiempo simulado" if result.is_simulated else f"{result.total_inference_ms():.1f} ms", styles["BodyText"])]]
     info = _table(meta, [3.4*cm, 5.2*cm, 3.7*cm, 4.7*cm]); info.setStyle(TableStyle([("FONTNAME", (0,0), (0,-1), "Helvetica-Bold"), ("FONTNAME", (2,0), (2,-1), "Helvetica-Bold"), ("BACKGROUND", (0,0), (0,-1), colors.HexColor("#E8F0F2")), ("BACKGROUND", (2,0), (2,-1), colors.HexColor("#E8F0F2"))]))
-    story += [info, Spacer(1, 12), Paragraph("Resumen consolidado", styles["Heading2"])]
+    story += [info, Spacer(1, 10)]
     counts, averages = result.class_counts(), result.averages_per_image()
+    kpis = [[Paragraph(f"{sum(counts.values())}<br/><font size='7' color='#58717D'>DETECCIONES</font>", styles["Kpi"]),
+             Paragraph(f"{result.average_confidence():.1%}<br/><font size='7' color='#58717D'>SCORE PROMEDIO</font>", styles["Kpi"]),
+             Paragraph(f"{len(result.successful_images)}<br/><font size='7' color='#58717D'>CAMPOS</font>", styles["Kpi"]),
+             Paragraph(f"{result.confidence_threshold:.0%}<br/><font size='7' color='#58717D'>UMBRAL</font>", styles["Kpi"])]]
+    kpi_table = Table(kpis, colWidths=[4.25*cm]*4); kpi_table.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#EAF4F5")),("BOX",(0,0),(-1,-1),.5,colors.HexColor("#C9DDE2")),("INNERGRID",(0,0),(-1,-1),.5,colors.HexColor("#C9DDE2")),("TOPPADDING",(0,0),(-1,-1),10),("BOTTOMPADDING",(0,0),(-1,-1),10)]))
+    story += [kpi_table, Spacer(1, 12), Paragraph("Distribución de hallazgos", styles["Section"]), _distribution_chart(counts), Spacer(1, 5), Paragraph("Detalle estadístico", styles["Section"])]
     rows = [["Clase", "Total", "Promedio por campo", "Score medio", "Presencia"]]
     for name, total in sorted(counts.items()):
         values = [d.confidence for image in result.successful_images for d in result.detections_for(image) if d.class_name == name]
@@ -101,23 +138,22 @@ def generate_pdf(result: StudyResult, output_path: Path) -> Path:
     original_total = sum(len(image.raw_detections) for image in result.successful_images)
     accepted_review = sum(len(result.reviewed_detections_for(image)) for image in result.successful_images)
     story += [Paragraph(f"Auditoría: predicciones originales <b>{original_total}</b> · aceptadas tras revisión <b>{accepted_review}</b> · rechazadas <b>{reviews.get('incorrecta', 0)}</b> · correcciones humanas <b>{reviews.get('clase_equivocada', 0)}</b> · elementos omitidos <b>{reviews.get('elemento_omitido', 0)}</b>", styles["BodyText"]),
-              Spacer(1, 10), Paragraph("Interpretación orientativa", styles["Heading2"])]
+              Spacer(1, 8), PageBreak(), Paragraph("Interpretación orientativa", styles["Section"])]
     for message in interpret_study(result): story += [Paragraph(message, styles["BodyText"]), Spacer(1, 4)]
     story += [Spacer(1, 6), Paragraph("Limitación: los conteos representan detecciones por imagen cargada. No equivalen automáticamente a valores clínicos por campo microscópico sin controlar aumento, preparación, área y protocolo. Los indicadores de calidad son heurísticas técnicas, no una evaluación clínica.", styles["Notice"])]
 
-    evidence_limit = 6 if result.audit_mode else 4
+    evidence_limit = 2
     selected = sorted(result.successful_images, key=lambda image: len(result.detections_for(image)), reverse=True)[:evidence_limit]
     if selected:
-        criterion = ("Modo auditoría: se incluyen hasta seis campos con mayor número de detecciones aceptadas."
-                     if result.audit_mode else "Criterio de selección: hasta cuatro campos con mayor número de detecciones aceptadas al umbral configurado.")
-        story += [PageBreak(), Paragraph("Evidencia visual", styles["Heading2"]), Paragraph(criterion, styles["Sub"])]
+        criterion = "Se incluyen hasta dos campos representativos con mayor número de detecciones aceptadas. Todas las imágenes anotadas pueden exportarse por separado."
+        story += [PageBreak(), Paragraph("Evidencia visual", styles["Section"]), Paragraph(criterion, styles["Sub"])]
     temp_paths: list[Path] = []
     for index, analysis in enumerate(selected, 1):
         if index > 1:
             story.append(PageBreak())
         accepted = result.detections_for(analysis); average = sum(d.confidence for d in accepted)/len(accepted) if accepted else 0
         quality = analysis.quality; quality_status = quality.status if quality else "No evaluada"
-        field_story = [Paragraph(f"Campo {index}: {analysis.image_path.name}", styles["Heading2"]),
+        field_story = [Paragraph(f"Campo {index}: {analysis.image_path.name}", styles["Section"]),
                        _table([["Detecciones", str(len(accepted)), "Score promedio", f"{average:.1%}"],
                                ["Originales", str(len(analysis.raw_detections)), "Estado de calidad", quality_status],
                                ["Ocultas/rechazadas", str(len(analysis.hidden_detections(result.confidence_threshold)) + sum(d.human_review == 'incorrecta' for d in analysis.detections)), "Variante", analysis.processing_variant]], [3.7*cm, 3.0*cm, 4.4*cm, 5.9*cm]),
@@ -129,8 +165,8 @@ def generate_pdf(result: StudyResult, output_path: Path) -> Path:
         field_story += [Paragraph(f"Clases crudas: {', '.join(raw_names) or 'ninguna'} · Normalizadas: {', '.join(normalized_names) or 'ninguna'}", styles["BodyText"]), Spacer(1, 5)]
         temp_path = output_path.parent / f".{output_path.stem}_preview_{index}.png"; temp_paths.append(temp_path)
         try:
-            _annotated_preview(result, analysis, temp_path)
-            field_story += [Image(str(temp_path), width=15.5*cm, height=9.2*cm, kind="proportional"), Spacer(1, 7)]
+            annotated_image(result, analysis, temp_path, preview=True)
+            field_story += [Image(str(temp_path), width=13.5*cm, height=8.0*cm, kind="proportional"), Spacer(1, 7)]
         except OSError:
             field_story += [Paragraph("No fue posible incluir la vista previa de este campo.", styles["Notice"])]
         present_classes = {d.effective_class for d in result.detections_for(analysis)}

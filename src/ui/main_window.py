@@ -1,21 +1,21 @@
 from pathlib import Path
 import tempfile
 
-from PySide6.QtCore import QSize, Qt, QThread
-from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon, QPixmap
+from PySide6.QtCore import QSize, Qt, QThread, Signal
+from PySide6.QtGui import QColor, QDragEnterEvent, QDropEvent, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QLineEdit,
     QFrame, QGraphicsPixmapItem, QGraphicsScene, QGraphicsView, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QListWidget, QListWidgetItem,
-    QMainWindow, QMessageBox, QProgressBar, QPushButton, QSplitter, QStatusBar, QTabWidget,
+    QMainWindow, QMenu, QMessageBox, QProgressBar, QPushButton, QSplitter, QStatusBar, QTabWidget,
     QTableWidget, QTableWidgetItem, QTextEdit, QVBoxLayout, QWidget)
 
 from src.domain.models import ImageAnalysis, StudyResult, generate_patient_id
 from src.interpretation.rule_engine import interpret_study
-from src.reports.pdf_report import generate_pdf
+from src.reports.pdf_report import export_annotated_images, generate_pdf
 from src.services.analysis_service import AnalysisService
 from src.services.export_service import export_csv, export_json
 from src.processing.preprocessing import preprocess_experimental
 from src.ui.analysis_worker import AnalysisWorker
-from src.ui.image_renderer import fit_pixmap, legend_html, render_analysis
+from src.ui.image_renderer import CLASS_COLORS, fit_pixmap, legend_html, render_analysis
 
 
 PALETTES = {
@@ -51,6 +51,48 @@ def stylesheet(theme: str) -> str:
     QProgressBar::chunk {{ background:{p['primary']}; }}
     QStatusBar {{ background:{p['surface']}; color:{p['muted']}; border-top:1px solid {p['line']}; }}
     """
+
+
+class ThemeSwitch(QWidget):
+    toggled = Signal(bool)
+
+    def __init__(self) -> None:
+        super().__init__(); self._dark = False; self.setFixedSize(54, 28)
+        self.setCursor(Qt.PointingHandCursor); self.setToolTip("Cambiar entre modo claro y oscuro")
+
+    def mouseReleaseEvent(self, event) -> None:
+        if event.button() == Qt.LeftButton:
+            self._dark = not self._dark; self.toggled.emit(self._dark); self.update()
+        super().mouseReleaseEvent(event)
+
+    def paintEvent(self, _event) -> None:
+        painter = QPainter(self); painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(Qt.NoPen); painter.setBrush(QColor("#31B7B2" if self._dark else "#AFC3CA"))
+        painter.drawRoundedRect(self.rect(), 14, 14)
+        painter.setBrush(QColor("#FFFFFF")); x = 28 if self._dark else 3
+        painter.drawEllipse(x, 3, 22, 22); painter.end()
+
+
+class ClassBarChart(QWidget):
+    def __init__(self) -> None:
+        super().__init__(); self._counts: dict[str, int] = {}; self.setMinimumHeight(190)
+
+    def set_counts(self, counts: dict[str, int]) -> None:
+        self._counts = dict(counts); self.update()
+
+    def paintEvent(self, _event) -> None:
+        painter = QPainter(self); painter.setRenderHint(QPainter.Antialiasing)
+        painter.setFont(self.font()); maximum = max(self._counts.values(), default=1)
+        width = max(40, self.width() - 150); y = 8
+        for name, total in sorted(self._counts.items(), key=lambda item: item[1], reverse=True):
+            label = name.replace("_", " ").title(); painter.setPen(self.palette().text().color())
+            painter.drawText(4, y + 15, label[:19]); bar_width = max(3, int(width * total / maximum))
+            painter.setPen(Qt.NoPen); painter.setBrush(CLASS_COLORS.get(name, QColor("#31B7B2")))
+            painter.drawRoundedRect(125, y + 3, bar_width, 14, 5, 5)
+            painter.setPen(self.palette().text().color()); painter.drawText(132 + width, y + 15, str(total)); y += 25
+        if not self._counts:
+            painter.setPen(self.palette().text().color()); painter.drawText(self.rect(), Qt.AlignCenter, "Sin datos estadísticos")
+        painter.end()
 
 
 class ImageView(QGraphicsView):
@@ -106,16 +148,14 @@ class MainWindow(QMainWindow):
         header = QFrame(objectName="header"); h = QHBoxLayout(header); h.setContentsMargins(24, 12, 24, 12)
         titles = QVBoxLayout(); brand = QLabel("VECTOR UroSight", objectName="brand"); titles.addWidget(brand)
         titles.addWidget(QLabel("Plataforma de apoyo al análisis de sedimento urinario", objectName="subtitle")); h.addLayout(titles); h.addStretch()
-        self._stage = QLabel("1 · Preparar estudio", objectName="stage"); h.addWidget(self._stage)
         self._provider_badge = QLabel(self._provider_text(), objectName="muted"); h.addWidget(self._provider_badge)
-        self._theme_button = QPushButton("◐  Modo oscuro", objectName="quiet"); self._theme_button.clicked.connect(self._toggle_theme); h.addWidget(self._theme_button)
-        self._folio = QLabel("NUEVO ESTUDIO", objectName="muted"); h.addWidget(self._folio); layout.addWidget(header)
+        h.addSpacing(18); h.addWidget(QLabel("Claro", objectName="muted")); self._theme_switch = ThemeSwitch(); self._theme_switch.toggled.connect(self._set_dark_theme); h.addWidget(self._theme_switch); h.addWidget(QLabel("Oscuro", objectName="muted")); layout.addWidget(header)
 
         splitter = QSplitter(); splitter.setChildrenCollapsible(False); splitter.setContentsMargins(14, 14, 14, 10)
         sidebar = QFrame(); sidebar.setProperty("card", "true"); side = QVBoxLayout(sidebar); side.setContentsMargins(14, 14, 14, 14); side.setSpacing(10)
-        side.addWidget(QLabel("Preparar estudio", objectName="section")); side.addWidget(QLabel("Paciente (opcional)", objectName="muted"))
+        side.addWidget(QLabel("Nuevo estudio", objectName="section")); self._stage = QLabel("1 · Cargue los campos", objectName="stage"); side.addWidget(self._stage); side.addWidget(QLabel("Paciente (opcional)", objectName="muted"))
         self._patient_name = QLineEdit(); self._patient_name.setPlaceholderText("Nombre completo"); side.addWidget(self._patient_name)
-        self._patient_id = QLabel(self._patient_id_value, objectName="muted"); self._patient_id.setToolTip("Identificador aleatorio; no contiene datos del paciente."); side.addWidget(self._patient_id)
+        self._patient_id = QLabel(self._patient_id_value, objectName="muted"); self._patient_id.setToolTip("Identificador aleatorio; no contiene datos del paciente."); side.addWidget(self._patient_id); self._folio = QLabel("NUEVO ESTUDIO", objectName="muted"); side.addWidget(self._folio)
         load_row = QHBoxLayout(); images = QPushButton("＋ Imágenes"); images.clicked.connect(self._select_images); folder = QPushButton("＋ Carpeta"); folder.clicked.connect(self._select_folder); load_row.addWidget(images); load_row.addWidget(folder); side.addLayout(load_row)
         side.addWidget(QLabel("Campos cargados", objectName="section"))
         self._files = QListWidget(); self._files.setIconSize(QSize(74, 54)); self._files.currentRowChanged.connect(self._select_analysis); side.addWidget(self._files)
@@ -146,30 +186,36 @@ class MainWindow(QMainWindow):
         center_layout.addWidget(tabs, 2); splitter.addWidget(center)
         self._detections.cellClicked.connect(self._detection_selected)
 
-        results = QFrame(); results.setProperty("card", "true"); results_layout = QVBoxLayout(results); results_layout.setContentsMargins(14, 14, 14, 14); results_layout.setSpacing(10); results_layout.addWidget(QLabel("Resumen del estudio", objectName="section"))
-        cards = QGridLayout(); self._count_card = self._card(cards, "Detecciones", 0, 0); self._confidence_card = self._card(cards, "Score promedio", 0, 1); self._time_card = self._card(cards, "Tiempo total", 1, 0); self._images_card = self._card(cards, "Campos procesados", 1, 1); results_layout.addLayout(cards)
-        self._summary = QTableWidget(0, 3); self._summary.setHorizontalHeaderLabels(["Clase", "Total", "Promedio/campo"]); self._summary.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch); self._summary.setEditTriggers(QAbstractItemView.NoEditTriggers); results_layout.addWidget(self._summary)
-        results_layout.addWidget(QLabel("Interpretación orientativa", objectName="section")); self._interpretation = QTextEdit(); self._interpretation.setReadOnly(True); self._interpretation.setPlaceholderText("Los hallazgos aparecerán al terminar el análisis."); results_layout.addWidget(self._interpretation)
+        results = QFrame(); results.setProperty("card", "true"); results_layout = QVBoxLayout(results); results_layout.setContentsMargins(14, 14, 14, 14); results_layout.setSpacing(10); results_layout.addWidget(QLabel("Resultados", objectName="section"))
+        result_tabs = QTabWidget(); overview = QWidget(); overview_layout = QVBoxLayout(overview); overview_layout.setContentsMargins(8, 10, 8, 8)
+        cards = QGridLayout(); self._count_card = self._card(cards, "Detecciones", 0, 0); self._confidence_card = self._card(cards, "Score promedio", 0, 1); self._time_card = self._card(cards, "Tiempo total", 1, 0); self._images_card = self._card(cards, "Campos procesados", 1, 1); overview_layout.addLayout(cards)
+        overview_layout.addWidget(QLabel("Interpretación orientativa", objectName="section")); self._interpretation = QTextEdit(); self._interpretation.setReadOnly(True); self._interpretation.setPlaceholderText("Los hallazgos aparecerán al terminar el análisis."); overview_layout.addWidget(self._interpretation); result_tabs.addTab(overview, "Resumen")
+        statistics = QWidget(); statistics_layout = QVBoxLayout(statistics); statistics_layout.setContentsMargins(8, 10, 8, 8); self._class_chart = ClassBarChart(); statistics_layout.addWidget(self._class_chart)
+        self._summary = QTableWidget(0, 3); self._summary.setHorizontalHeaderLabels(["Clase", "Total", "Prom./campo"]); self._summary.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch); self._summary.setEditTriggers(QAbstractItemView.NoEditTriggers); statistics_layout.addWidget(self._summary); result_tabs.addTab(statistics, "Estadísticas"); results_layout.addWidget(result_tabs, 1)
         warning = QLabel("USO ACADÉMICO · Confirme visualmente cada hallazgo. No sustituye el criterio profesional."); warning.setObjectName("warning"); warning.setWordWrap(True); results_layout.addWidget(warning)
-        self._export_button = QPushButton("Exportar reporte", objectName="primary"); self._export_button.clicked.connect(self._export); self._export_button.setEnabled(False); results_layout.addWidget(self._export_button); splitter.addWidget(results)
+        self._export_button = QPushButton("Exportar ▾", objectName="primary"); self._export_button.setEnabled(False)
+        export_menu = QMenu(self._export_button); export_menu.addAction("Reporte clínico PDF", self._export_pdf); export_menu.addAction("Imágenes anotadas", self._export_images); export_menu.addSeparator(); export_menu.addAction("Estadísticas CSV", self._export_csv); export_menu.addAction("Sesión completa JSON", self._export_json); self._export_button.setMenu(export_menu); results_layout.addWidget(self._export_button); splitter.addWidget(results)
         splitter.setSizes([255, 820, 350]); layout.addWidget(splitter, 1)
         self._progress = QProgressBar(); self._progress.hide(); layout.addWidget(self._progress)
         self.setStatusBar(QStatusBar()); self.statusBar().showMessage("Seleccione imágenes para comenzar.")
         self.setCentralWidget(root)
         self._audit_toggled(False)
 
-    def _toggle_theme(self) -> None:
-        self._theme = "dark" if self._theme == "light" else "light"
+    def _set_dark_theme(self, enabled: bool) -> None:
+        self._theme = "dark" if enabled else "light"
         self.setStyleSheet(stylesheet(self._theme))
-        self._theme_button.setText("☀  Modo claro" if self._theme == "dark" else "◐  Modo oscuro")
         self._viewer.setStyleSheet(f"background:{'#0B1419' if self._theme == 'dark' else '#E7EFF2'};border:1px solid {PALETTES[self._theme]['line']};border-radius:9px;")
+
+    def _toggle_theme(self) -> None:
+        self._theme_switch._dark = not self._theme_switch._dark
+        self._theme_switch.update(); self._set_dark_theme(self._theme_switch._dark)
 
     def _set_stage(self, number: int, label: str) -> None:
         self._stage.setText(f"{number} · {label}")
 
     def _provider_text(self) -> str:
         return ("MODO DEMOSTRACIÓN - RESULTADOS SIMULADOS" if self._service.is_simulated
-                else f"MOTOR ACTIVO - {self._service.provider_name.upper()}")
+                else "Motor de análisis · YOLO11s")
 
     @staticmethod
     def _card(layout: QGridLayout, title: str, row: int, col: int) -> QLabel:
@@ -259,6 +305,7 @@ class MainWindow(QMainWindow):
         result = self._result; counts = result.class_counts(); averages = result.averages_per_image(); self._summary.setRowCount(len(counts))
         for row, (name, total) in enumerate(sorted(counts.items())):
             for col, value in enumerate((name.replace("_", " ").title(), str(total), f"{averages[name]:.2f}")): self._summary.setItem(row, col, QTableWidgetItem(value))
+        self._class_chart.set_counts(counts)
         self._count_card.setText(str(sum(counts.values()))); self._confidence_card.setText(f"{result.average_confidence():.1%}")
         self._time_card.setText("Simulado" if result.is_simulated else f"{result.total_inference_ms():.1f} ms"); self._images_card.setText(f"{len(result.successful_images)}/{len(result.images)}")
         self._interpretation.setPlainText("\n\n".join(interpret_study(result)))
@@ -329,18 +376,38 @@ class MainWindow(QMainWindow):
             detection.corrected_class = self._corrected_class.currentText().strip() if status == "clase_equivocada" else ""
         self._update_study_results(); self._refresh_view(); self.statusBar().showMessage("Revisión humana guardada en el estudio; use Exportar para persistirla.")
 
-    def _export(self) -> None:
+    def _export_file(self, label: str, suffix: str, file_filter: str, writer) -> None:
         if not self._result: return
-        filename, selected = QFileDialog.getSaveFileName(self, "Exportar resultados", f"VECTOR_UroSight_{self._result.study_id}.pdf", "PDF (*.pdf);;JSON (*.json);;CSV (*.csv)")
+        filename, _ = QFileDialog.getSaveFileName(self, label, f"VECTOR_UroSight_{self._result.study_id}{suffix}", file_filter)
         if not filename: return
-        path = Path(filename)
+        path = Path(filename).with_suffix(suffix)
         try:
-            if "JSON" in selected: path = path.with_suffix(".json"); export_json(self._result, path)
-            elif "CSV" in selected: path = path.with_suffix(".csv"); export_csv(self._result, path)
-            else: path = path.with_suffix(".pdf"); generate_pdf(self._result, path)
-            self._set_stage(4, "Reporte exportado")
+            writer(self._result, path); self._set_stage(4, "Exportación completada")
             self.statusBar().showMessage(f"Archivo exportado: {path}")
         except Exception as exc: QMessageBox.critical(self, "No se pudo exportar", str(exc))
+
+    def _export(self) -> None:
+        self._export_pdf()
+
+    def _export_pdf(self) -> None:
+        self._export_file("Guardar reporte clínico", ".pdf", "PDF (*.pdf)", generate_pdf)
+
+    def _export_csv(self) -> None:
+        self._export_file("Guardar estadísticas", ".csv", "CSV (*.csv)", export_csv)
+
+    def _export_json(self) -> None:
+        self._export_file("Guardar sesión completa", ".json", "JSON (*.json)", export_json)
+
+    def _export_images(self) -> None:
+        if not self._result: return
+        selected = QFileDialog.getExistingDirectory(self, "Carpeta para imágenes anotadas")
+        if not selected: return
+        folder = Path(selected) / f"VECTOR_UroSight_{self._result.study_id}_imagenes"
+        try:
+            paths = export_annotated_images(self._result, folder)
+            self._set_stage(4, "Exportación completada")
+            self.statusBar().showMessage(f"{len(paths)} imágenes anotadas exportadas en: {folder}")
+        except Exception as exc: QMessageBox.critical(self, "No se pudieron exportar las imágenes", str(exc))
 
     def closeEvent(self, event) -> None:
         if self._thread and self._thread.isRunning():
