@@ -19,7 +19,7 @@ Desarrollar un sistema inteligente de apoyo al análisis del sedimento urinario 
 - Promedio por campo cargado.
 - Interpretación orientativa basada en reglas.
 - Reporte PDF.
-- Exportación CSV o JSON.
+- Exportación PDF, imágenes anotadas y estadísticas CSV.
 
 ## Clases iniciales mínimas
 - Eritrocitos.

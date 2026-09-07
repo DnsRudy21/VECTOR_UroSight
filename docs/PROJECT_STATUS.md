@@ -1,100 +1,45 @@
-# VECTOR UroSight — Project Status
+# Estado del proyecto
 
-Última actualización: 2026-08-20 (America/Mexico_City)
+Última actualización: 2026-09-07 (America/Mexico_City)
 
-Progreso global técnico: 100 %
+## Estado actual
 
-ETA técnico: completado. Árbol fuente preparado para el primer commit y publicación en GitHub.
+**VECTOR UroSight 1.0.0 Academic Demo** es la versión fuente estable destinada a presentación académica. El modelo, la interfaz y el generador de reportes están congelados; no existen entrenamientos activos.
 
-Estado: CIERRE TÉCNICO COMPLETADO; CANDIDATO FUENTE PREPARADO PARA PUBLICACIÓN
+Este estado significa cierre técnico de la demo, no validación clínica. El sistema sigue siendo experimental y requiere confirmación visual profesional.
 
-Fase actual: repositorio público mínimo y verificable
+## Componentes congelados
 
-Tarea actual: ninguna tarea técnica local pendiente
+| Componente | Estado |
+|---|---|
+| Modelo | YOLO11s, mejor checkpoint en época 13 de 15 |
+| Dataset canónico original | 5,292 imágenes: 4,176 train / 848 validation / 268 test |
+| Entrenamiento dirigido | 4,177 originales de train + 2,036 teselas generadas solo desde train |
+| Inferencia | 448 px, aumento activado, umbral 0.443443 |
+| UI | Flujo minimalista multimagen, temas claro/oscuro y configuración secundaria oculta |
+| Exportaciones visibles | PDF adaptable, imágenes anotadas y estadísticas CSV |
+| Pruebas | 44 aprobadas, 0 fallidas |
+| Operación | Local y sin servicios remotos |
 
-Última tarea completada: identidad de paciente, puerta operativa, PDF final y empaquetado portable
+## Métricas finales
 
-Siguiente tarea externa: crear el repositorio remoto y publicar desde la cuenta del propietario
+| Split | Precision | Recall | mAP@50 | mAP@50-95 |
+|---|---:|---:|---:|---:|
+| Validation interna | 0.825059 | 0.815430 | 0.867705 | 0.509357 |
+| Test interno independiente | 0.808721 | 0.813571 | 0.854268 | 0.494546 |
+| UMID externo | 0.5238 | 0.1199 | 0.0685 | 0.0348 |
 
-## Progreso por área
+El test interno se abrió después de congelar checkpoint, configuración y umbral. UMID demuestra un cambio de dominio severo; por ello no se hacen afirmaciones de generalización clínica.
 
-| Área | Peso | Avance interno | Contribución |
-|------|------|----------------|--------------|
-| Auditoría | 10% | 100% | 10.0% |
-| Dataset | 15% | 100% | 15.0% |
-| Entrenamiento | 25% | 100% | 25.0% |
-| Evaluación | 15% | 100% | 15.0% |
-| Integración | 10% | 100% | 10.0% |
-| UI / reportes | 10% | 100% | 10.0% |
-| Pruebas | 7% | 100% | 7.0% |
-| Documentación | 5% | 100% | 5.0% |
-| GitHub | 3% | 100% | 3.0% |
+## Integridad
 
-TOTAL técnico: 100 %. La publicación remota permanece como acción externa del propietario.
+- SHA-256 del modelo congelado: `C5FBA1AECCB60CA8EAC49C1750123A5DC85F22456F02F805F62FFF6386669530`.
+- El repositorio público excluye pesos, datasets, imágenes, PDFs, ejecutables, secretos y resultados generados.
+- El portable oficial se conserva fuera del árbol Git y no forma parte de la distribución pública.
+- La redistribución del modelo o del portable requiere revisar de forma independiente las licencias de dependencias y pesos.
 
-El porcentaje representa completitud técnica, no desempeño clínico. El sistema no está clínicamente validado.
+## Pendientes externos
 
-## Completado
-
-- Arquitectura modular PySide6 con modo de demostración explícito y adaptador YOLO exclusivamente local.
-- Flujo multimagen, revisión humana, reglas explícitas y exportación PDF/CSV/JSON.
-- Suite ejecutada el 2026-08-17: 46 passed, 0 failed, 0 skipped en 7.47 s.
-- Inventario inicial de fuentes: USE en Pascal VOC y UMID convertido a YOLO.
-- Hardware verificado: Python 3.11.9, PyTorch 2.12.1+cpu, CUDA no disponible.
-- Ontología inicial sustentada por README y etiquetas reales de las fuentes, incluidos conteos por clase de UMID.
-- Auditoría reproducible con SHA-256: 26 grupos duplicados cruzaban splits USE; UMID no presentó fuga exacta entre splits.
-- Dataset maestro USE: 5,293 imágenes, 41,697 objetos, splits 4,177/848/268 y siete clases.
-- Validación del derivado: cero hashes cruzados entre splits y cero etiquetas YOLO inválidas.
-- Corrida de medición YOLO11n a 320 px: 84 imágenes en 11.4 s; validación de 848 imágenes en 26.1 s.
-- Primera época completa del baseline: 7 min 43 s de entrenamiento y 36.3 s de validación; mAP@50 de validación 0.299 y mAP@50–95 0.137 (resultado temprano, no final).
-- Segunda época: precision 0.529, recall 0.534, mAP@50 0.515 y mAP@50–95 0.256 sobre validación; la época 3 está en ejecución.
-- Tercera época: precision 0.564, recall 0.581, mAP@50 0.583 y mAP@50–95 0.304 sobre validación; la época 4 está en ejecución.
-- Cuarta época sin mejora: precision 0.546, recall 0.548, mAP@50 0.557 y mAP@50–95 0.286. `best.pt` permanece en época 3; época 5 en ejecución.
-- Quinta época, nuevo mejor checkpoint: precision 0.609, recall 0.622, mAP@50 0.624 y mAP@50–95 0.326; época 6 en ejecución.
-- Sexta época, nuevo mejor checkpoint: precision 0.650, recall 0.620, mAP@50 0.634 y mAP@50–95 0.333.
-- Séptima época, nuevo mejor checkpoint: precision 0.648, recall 0.655, mAP@50 0.674 y mAP@50–95 0.357; época 8 en ejecución.
-- El arranque muestra un error controlado si el proveedor configurado no puede inicializarse.
-- Herramientas probadas para evaluación final y empaquetado sin sobrescritura del checkpoint.
-- Model card provisional, flujo reproducible y exclusiones de datos/pesos documentados.
-- UMID externo preparado sin usarlo para ajuste: 363 imágenes, 2,979 objetos de las tres clases compartidas y tres imágenes sin anotación excluidas.
-- Entrenamiento YOLO11n completado: 30 épocas; mejor checkpoint en época 30.
-- Umbral 0.25 seleccionado solo en validación por máximo F1 global.
-- Test interno usado una sola vez: precision 0.7811, recall 0.7476, mAP@50 0.7526 y mAP@50–95 0.4293.
-- UMID externo: precision 0.5238, recall 0.1199, mAP@50 0.0685 y mAP@50–95 0.0348; domain shift severo documentado.
-- Optimización operativa posterior: 480 px seleccionado únicamente en validation; evaluación formal congelada en test con precision 0.786285, recall 0.818092, mAP@50 0.825461 y mAP@50–95 0.469418. El checkpoint no cambió.
-- Revisión de cobertura: 448 px con inferencia aumentada seleccionado en validation. En test obtuvo precision 0.771033, recall 0.815977, mAP@50 0.835967 y mAP@50–95 0.487220; sobre las cinco imágenes sintéticas pasó de 36 a 86 detecciones, sin usar ese material como evidencia de exactitud.
-- Análisis de error: 1,415 TP, 545 FP, 241 FN y 36 confusiones de clase a IoU 0.50.
-- Modelo local real probado; 12 ejemplos renderizados y captura visual offscreen generados.
-- Suite final: 49 passed. Verificador de liberación aprobado y escaneo activo de rutas/secretos limpio.
-- Identidad transitoria de paciente añadida a la GUI y a PDF/CSV/JSON, con ID automático por nueva selección.
-- Puerta operativa final: 18 inferencias (6 imágenes × 3 rondas), cero fallos y resultados deterministas; mediana 44.0 ms, p95 49.9 ms, máximo 3172.6 ms incluyendo carga fría.
-- PDF final generado con seis imágenes reales del conjunto de demostración, 165 detecciones aceptadas y leyenda dinámica; cinco páginas renderizadas e inspeccionadas.
-- Portable Windows x64 configurado con modelo local congelado y sin secretos; la redistribución pública de pesos continúa sujeta a confirmación de licencia.
-- Suite completa ejecutada el 2026-08-20: 49 passed, 0 failed, 0 skipped.
-- Instalación editable y construcción de wheel verificadas; metadatos CFF/YAML válidos y enlaces locales del README íntegros.
-- Auditoría de dependencias base, local, auditoría y build: cero vulnerabilidades conocidas reportadas por `pip-audit`.
-- CI de GitHub, plantillas de colaboración, citación y documentación bilingüe preparados.
-
-## En ejecución
-
-- Ninguna tarea técnica local.
-
-## Pendiente externo
-
-- Crear el repositorio remoto y publicar bajo AGPL-3.0 desde la cuenta del propietario.
-- Solicitar revisión jurídica independiente antes de cualquier uso comercial o clínico.
-
-## Material excluido del repositorio público
-
-- Datasets USE/UMID, derivados, imágenes y anotaciones.
-- Pesos entrenados, checkpoints y modelos preentrenados.
-- Artefactos de entrenamiento/evaluación, PDFs, portables y compilaciones.
-- Credenciales, `.env`, cachés y rutas locales.
-
-La baja generalización externa sigue bloqueando cualquier afirmación clínica, no la publicación académica del código fuente.
-
-## Evidencia de datos disponible
-
-- USE: 5,391 archivos de imagen, 5,376 XML; splits declarados 4,256/852/268; 42,235 objetos reportados en siete clases, con 12 cajas inválidas.
-- UMID derivado YOLO: 366 imágenes y 363 etiquetas; splits 268/38/60; 2,979 líneas de objeto (2,097/362/520) en tres clases.
-- El antiguo resumen combinado contabiliza originales y derivados juntos. Sus duplicados combinados no constituyen por sí solos evidencia de fuga entre splits.
+- Publicar la rama estable en GitHub desde la cuenta del propietario.
+- Solicitar revisión jurídica y regulatoria independiente antes de cualquier uso clínico o comercial.
+- Realizar validación externa multicéntrica antes de formular afirmaciones de desempeño clínico.

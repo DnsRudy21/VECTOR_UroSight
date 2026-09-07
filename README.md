@@ -2,154 +2,141 @@
 
 # VECTOR UroSight
 
-### Análisis trazable de imágenes de sedimento urinario
+### Visión computacional local y trazable para sedimento urinario
 
-![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-![PySide6](https://img.shields.io/badge/UI-PySide6-41CD52?logo=qt&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-automated-2EA44F)
-![Offline](https://img.shields.io/badge/inference-100%25%20local-087F8C)
-![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
-![Status](https://img.shields.io/badge/status-academic%20prototype-orange)
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-005EB8?logo=python&logoColor=white)](https://www.python.org/)
+[![YOLO11s](https://img.shields.io/badge/modelo-YOLO11s-172B3A)](docs/MODEL_CARD.md)
+[![Offline](https://img.shields.io/badge/inferencia-100%25_local-007F3B)](#inicio-rápido)
+[![Tests](https://img.shields.io/badge/pruebas-44_aprobadas-2EA44F)](.github/workflows/ci.yml)
+[![License](https://img.shields.io/badge/licencia-AGPL--3.0-005EB8)](LICENSE)
+[![Status](https://img.shields.io/badge/estado-demo_académica-ED8B00)](#alcance-y-uso-responsable)
 
-**[Español](#español)** · **[English](#english)** · [Arquitectura](docs/ARCHITECTURE.md) · [Model Card](docs/MODEL_CARD.md) · [Seguridad](SECURITY.md)
+**[Español](#español)** · **[English](#english)** · [Modelo](docs/MODEL_CARD.md) · [Arquitectura](docs/ARCHITECTURE.md) · [Seguridad](SECURITY.md)
+
+<sub>Investigación reproducible · Supervisión humana · Privacidad por diseño</sub>
 
 </div>
 
 > [!IMPORTANT]
-> VECTOR UroSight es un prototipo académico experimental. **No es un dispositivo médico, no está clínicamente validado y no sustituye la revisión de profesionales del laboratorio.**
+> **Prototipo académico experimental.** VECTOR UroSight no es un dispositivo médico, no está clínicamente validado y no sustituye la revisión de profesionales del laboratorio.
 
 ---
 
 ## Español
 
-### Visión general
+### Una experiencia simple para un problema complejo
 
-VECTOR UroSight es una aplicación de escritorio para apoyar la revisión humana de imágenes microscópicas de sedimento urinario. Detecta elementos visibles, conserva la evidencia de cada predicción, permite corregir resultados y genera reportes auditables en PDF, CSV y JSON.
+VECTOR UroSight es una aplicación de escritorio que apoya la revisión humana de imágenes microscópicas de sedimento urinario. Todo ocurre localmente: las imágenes no se envían a servicios externos y cada predicción conserva su clase, confianza, caja y procedencia.
 
-El diseño sigue una idea central: toda salida automatizada debe ser **revisable, explicable y reversible**.
-
-### Capacidades
-
-| Área | Funcionalidad |
-|---|---|
-| Interfaz | Flujo minimalista multimagen, temas claro/oscuro, arrastrar y soltar, filtros y revisión visual |
-| Inferencia | YOLO11s integrado y ejecutado sin conexión; modo de demostración separado para pruebas |
-| Trazabilidad | Clase original y normalizada, confianza, caja, modelo, umbral e imagen fuente |
-| Revisión humana | Marcar detecciones correctas, incorrectas, clase equivocada o elementos omitidos |
-| Calidad | Alertas técnicas de brillo, contraste y nitidez sin emitir conclusiones clínicas |
-| Reportes | PDF clínico, estadísticas, imágenes anotadas y exportaciones CSV/JSON |
-| Arquitectura | GUI, dominio, inferencia, reglas, procesamiento y reportes desacoplados |
-
-### Flujo técnico
+El flujo está diseñado para entenderse al verlo:
 
 ```mermaid
 flowchart LR
-    A["Imágenes microscópicas"] --> B["Interfaz PySide6"]
-    B --> C["Servicio de análisis"]
-    C --> D["YOLO11s integrado"]
-    C -. desarrollo .-> E["Mock explícito"]
-    D --> H["Normalización y reglas auditables"]
-    H --> I["Revisión humana"]
-    I --> J["PDF · imágenes anotadas · CSV · JSON"]
+    A["1 · Añadir campos"] --> B["2 · Analizar"]
+    B --> C["3 · Revisar resultados"]
+    C --> D["4 · Exportar"]
+    D --> E["PDF adaptable"]
+    D --> F["Imágenes anotadas"]
+    D --> G["Estadísticas CSV"]
 ```
 
-### Resultados experimentales
+### Lo esencial
 
-El checkpoint final es YOLO11s, ajustado durante 15 épocas sobre el conjunto de entrenamiento canónico y teselas dirigidas de clases minoritarias. La época 13 fue seleccionada exclusivamente con validation. La operación usa inferencia aumentada a 448 px y umbral 0.44 (óptimo de F1 en validation); test permaneció aislado hasta congelar esta configuración.
+| | Capacidad |
+|---|---|
+| **Privado** | Inferencia YOLO11s completamente local y utilizable sin Internet |
+| **Visual** | Interfaz clínica minimalista, temas claro/oscuro y revisión por campo |
+| **Trazable** | Clase, confianza, caja, umbral, modelo e imagen fuente |
+| **Auditable** | Revisión humana y controles avanzados disponibles sin saturar la vista |
+| **Exportable** | PDF clínico, imágenes anotadas y estadísticas CSV |
+| **Adaptable** | El PDF muestra todos los campos: grande para estudios pequeños y hasta 12 evidencias por página en estudios extensos |
 
-| Evaluación | Precision | Recall | mAP@50 | mAP@50–95 |
+### Resultados reales del modelo congelado
+
+**Modelo:** YOLO11s · **checkpoint:** época 13 de 15 · **resolución:** 448 px con inferencia aumentada · **umbral:** 0.443443
+
+| Evaluación | Precision | Recall | mAP@50 | mAP@50-95 |
 |---|---:|---:|---:|---:|
-| Validation USE (448 px, inferencia aumentada) | 0.825059 | 0.815430 | 0.867705 | 0.509357 |
-| Test interno USE (448 px, inferencia aumentada) | 0.808721 | 0.813571 | 0.854268 | 0.494546 |
+| Validation interna | 0.825059 | 0.815430 | 0.867705 | 0.509357 |
+| **Test interno independiente** | **0.808721** | **0.813571** | **0.854268** | **0.494546** |
 | Evaluación externa UMID | 0.5238 | 0.1199 | 0.0685 | 0.0348 |
 
-La caída en UMID muestra un **cambio de dominio severo**. Estas métricas describen un experimento reproducible; no demuestran desempeño clínico ni generalización a otros laboratorios, microscopios o protocolos.
+> [!WARNING]
+> La caída en UMID demuestra un cambio de dominio severo. Los resultados son evidencia experimental reproducible, no evidencia de desempeño clínico ni de generalización entre laboratorios, microscopios o protocolos.
+
+Más detalles y métricas por clase: [Model Card](docs/MODEL_CARD.md).
 
 ### Inicio rápido
 
-#### Requisitos
+#### Demostración sin pesos del modelo
 
-- Python 3.11
-- Windows, Linux o macOS
-- Entorno virtual recomendado
-
-```bash
+```powershell
 python -m venv .venv
-```
-
-Active el entorno e instale el modo de demostración:
-
-```bash
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python -m src.main
 ```
 
-#### Modelo YOLO11s sin conexión
+#### Inferencia YOLO local
 
-Los pesos no se distribuyen en el repositorio. Instale las dependencias opcionales, copie `.env.example` como `.env` y configure una ruta local compatible:
+Los pesos no se publican en GitHub. Instale el soporte local y coloque un checkpoint compatible en `models/vector_urosight/best.pt`:
 
-```bash
+```powershell
 python -m pip install -r requirements-local.txt
+Copy-Item .env.example .env
+python -m src.main
 ```
+
+Configuración esperada:
 
 ```dotenv
 INFERENCE_PROVIDER=local
 LOCAL_MODEL_PATH=models/vector_urosight/best.pt
-CONFIDENCE_THRESHOLD=0.44
+CONFIDENCE_THRESHOLD=0.443443
+LOCAL_MODEL_IMGSZ=448
+LOCAL_MODEL_AUGMENT=true
 ```
 
-La inferencia no realiza solicitudes a servicios externos. Una vez instalado y con `best.pt` presente, el programa funciona sin conexión a Internet.
+Una vez instaladas las dependencias y presente el checkpoint, la inferencia no necesita conexión a Internet.
 
-### Pruebas
+### Calidad y pruebas
 
-```bash
+```powershell
 python -m pip install -r requirements-dev.txt
 python -m pytest -q
 ```
 
-La versión candidata pasa **43 pruebas automatizadas**. El flujo de integración continua repite la suite en Python 3.11 para cada `push` y `pull request`.
+La versión 1.0.0 Academic Demo pasa **44 pruebas automatizadas**. La integración continua repite la suite en Python 3.11 para cada `push` y `pull request` a `main`.
 
-### Datos, privacidad y artefactos
-
-- No se incluyen datasets, imágenes microscópicas, anotaciones, pesos, credenciales ni resultados generados.
-- USE y UMID se mencionan únicamente para documentar procedencia experimental; deben obtenerse desde fuentes autorizadas.
-- No use información identificable sin autorización institucional, controles de acceso y salvaguardas aplicables.
-- La aplicación no es un expediente clínico electrónico ni un LIS.
-
-### Estructura
+### Estructura del repositorio
 
 ```text
-src/
-├── domain/          # Entidades y trazabilidad
-├── inference/       # Proveedores desacoplados
-├── interpretation/  # Reglas explícitas
-├── processing/      # Calidad y normalización
-├── reports/         # Generación de reportes
-├── services/        # Casos de uso
-└── ui/              # Interfaz PySide6
-
-tests/               # Suite automatizada
-tools/               # Auditoría, datasets y evaluación
-docs/                # Arquitectura, decisiones y evidencia
+src/          aplicación, dominio, inferencia, reglas, reportes y UI
+tests/        pruebas unitarias, de integración, UI y PDF
+tools/        auditoría, preparación de datos y evaluación
+docs/         arquitectura, decisiones, modelo y evidencia experimental
+assets/       identidad visual de la aplicación
+.github/      CI, Dependabot y plantillas de colaboración
 ```
 
-### Documentación
+El repositorio excluye deliberadamente datasets, imágenes clínicas, pesos, ejecutables, reportes generados, secretos y artefactos de entrenamiento.
 
-- [Visión del producto](docs/PRODUCT_VISION.md)
-- [Arquitectura](docs/ARCHITECTURE.md)
-- [Criterios de aceptación](docs/ACCEPTANCE_CRITERIA.md)
-- [Model Card](docs/MODEL_CARD.md)
-- [Auditoría final de calidad](docs/QUALITY_AUDIT_FINAL.md)
-- [Análisis de errores](docs/ERROR_ANALYSIS.md)
-- [Avisos de terceros](THIRD_PARTY_NOTICES.md)
+### Alcance y uso responsable
 
-### Autoría, desarrollo y licencia
+- No cargue datos identificables de pacientes sin autorización institucional y salvaguardas aplicables.
+- Los conteos por imagen no equivalen automáticamente a valores clínicos por campo microscópico.
+- Toda salida debe confirmarse visualmente por personal competente.
+- La aplicación no es un LIS, expediente clínico electrónico ni dispositivo diagnóstico.
 
-Proyecto de maestría concebido y dirigido por **Ing. José Carlos Malacara Espinosa**, desarrollado con la colaboración y apoyo técnico de **Cómplices Sistemas**, con agradecimiento especial a la **Universidad Tecnológica de Coahuila**.
+Consulte [Seguridad](SECURITY.md), [Criterios de aceptación](docs/ACCEPTANCE_CRITERIA.md) y [Avisos de terceros](THIRD_PARTY_NOTICES.md).
 
-El proyecto siguió un enfoque de *vibe coding* responsable: desarrollo iterativo asistido por herramientas de IA, con dirección, revisión, pruebas y validación humana.
+### Autoría y licencia
 
-El código se publica bajo [GNU AGPL-3.0](LICENSE). La integración opcional con Ultralytics requiere conservar las obligaciones de AGPL-3.0 o contar con una licencia comercial aplicable. PySide6/Qt y las demás dependencias mantienen sus propias licencias. Consulte [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Proyecto de maestría concebido y dirigido por **Ing. José Carlos Malacara Espinosa**, desarrollado con colaboración técnica de **Cómplices Sistemas** y agradecimiento a la **Universidad Tecnológica de Coahuila**.
+
+El desarrollo siguió un enfoque de *vibe coding* responsable: iteración asistida por herramientas de IA con dirección, revisión, pruebas y validación humana.
+
+Código publicado bajo [GNU AGPL-3.0](LICENSE). Las dependencias y los datasets conservan sus propias licencias y condiciones. La redistribución de pesos o de un portable requiere una revisión independiente de licencias; no están incluidos en este repositorio.
 
 ---
 
@@ -157,48 +144,50 @@ El código se publica bajo [GNU AGPL-3.0](LICENSE). La integración opcional con
 
 ### Overview
 
-VECTOR UroSight is an academic desktop prototype for human-supervised review of urinary sediment microscopy images. It detects visible elements, preserves prediction provenance, supports manual corrections, and produces auditable PDF, CSV, and JSON reports.
+VECTOR UroSight is an academic desktop prototype for human-supervised review of urinary sediment microscopy images. It runs YOLO11s locally, preserves prediction provenance, supports visual review, and exports adaptive PDF reports, annotated images, and CSV statistics.
 
-Its core principle is simple: automated output must remain **reviewable, explainable, and reversible**.
+The interface follows one direct workflow: **add fields → analyze → review → export**. Secondary controls remain available without competing with the primary task.
 
-### Key features
+### Highlights
 
-- Minimal multi-image PySide6 workflow with light/dark themes, visual review, and filtering.
-- Fully local YOLO inference; an explicit mock remains only for development and automated tests.
-- Traceability for raw/normalized class, confidence, box, model, threshold, and source image.
-- Human review for incorrect classes, rejected detections, and omitted elements.
-- Explicit rules and technical image-quality warnings.
-- Clinical PDF, statistics, annotated images, CSV, and JSON exports.
-- Modular architecture with 43 automated tests and GitHub Actions CI.
+- Fully local inference; images are not sent to external services.
+- Minimal clinical UI with light and dark themes.
+- Traceability for class, confidence, bounding box, threshold, model, and source image.
+- Adaptive PDF evidence gallery that includes every processed field.
+- 44 automated tests and GitHub Actions CI.
+- Source-only public repository: no datasets, clinical images, credentials, weights, executables, or generated reports.
 
-### Experimental status
+### Experimental results
 
-| Evaluation | Precision | Recall | mAP@50 | mAP@50–95 |
+| Evaluation | Precision | Recall | mAP@50 | mAP@50-95 |
 |---|---:|---:|---:|---:|
-| Internal USE validation (448 px, augmented inference) | 0.825059 | 0.815430 | 0.867705 | 0.509357 |
-| Internal USE test (448 px, augmented inference) | 0.808721 | 0.813571 | 0.854268 | 0.494546 |
+| Internal validation | 0.825059 | 0.815430 | 0.867705 | 0.509357 |
+| **Independent internal test** | **0.808721** | **0.813571** | **0.854268** | **0.494546** |
 | External UMID evaluation | 0.5238 | 0.1199 | 0.0685 | 0.0348 |
 
-The external result shows severe domain shift. VECTOR UroSight is **not a diagnostic device, is not clinically validated, and must not replace professional laboratory review**.
+The external evaluation reveals severe domain shift. These are reproducible experimental measurements, not clinical validation or proof of generalization.
 
 ### Quick start
 
-```bash
+```powershell
 python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python -m src.main
 ```
 
-Local YOLO setup is described in the Spanish section above. Once dependencies and weights are present, inference requires no network connection. Datasets, model weights, clinical images, and generated artifacts are intentionally excluded.
+Local model setup is documented in the Spanish section. Once dependencies and weights are available, inference does not require an Internet connection.
 
-### License and attribution
+### Responsible use and license
 
-Copyright © 2026 José Carlos Malacara Espinosa. Released under [GNU AGPL-3.0](LICENSE). Third-party components remain subject to their respective terms; see [Third-party notices](THIRD_PARTY_NOTICES.md).
+VECTOR UroSight is not a medical device and must not replace professional laboratory review. Do not use identifiable patient data without the required authorization and safeguards.
+
+Copyright © 2026 José Carlos Malacara Espinosa. Released under [GNU AGPL-3.0](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md) before redistribution or deployment.
 
 ---
 
 <div align="center">
 
-**Investigación reproducible · Supervisión humana · Trazabilidad por diseño**
+**VECTOR UroSight · Local intelligence, visible evidence, human judgment**
 
 </div>
