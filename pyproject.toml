@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11,<3.12"
 license = "AGPL-3.0-only"
 authors = [{name = "José Carlos Malacara Espinosa"}]
-dependencies = ["PySide6>=6.7,<7", "Pillow>=10,<13", "python-dotenv>=1.0,<2", "reportlab>=4.2,<5"]
+dependencies = ["PySide6>=6.7,<7", "Pillow>=10,<13", "python-dotenv>=1.0,<2", "reportlab>=4.2,<6"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Education",
