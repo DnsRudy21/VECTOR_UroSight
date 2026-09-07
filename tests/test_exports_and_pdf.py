@@ -38,3 +38,18 @@ def test_structured_exports_and_readable_pdf(tmp_path):
     assert annotated[0].is_file()
     with Image.open(annotated[0]) as exported:
         assert exported.size == (640, 480)
+
+
+def test_pdf_includes_every_field_in_compact_adaptive_gallery(tmp_path):
+    image_paths = []
+    for index in range(13):
+        image_path = tmp_path / f"campo_{index + 1:02d}.png"
+        Image.new("RGB", (320, 240), "white").save(image_path)
+        image_paths.append(image_path)
+    result = AnalysisService(MockInferenceProvider()).analyze(image_paths, source="Prueba de galería")
+    pdf_path = generate_pdf(result, tmp_path / "gallery.pdf")
+    reader = PdfReader(str(pdf_path))
+    text = " ".join(page.extract_text() or "" for page in reader.pages)
+    assert all(path.name in text for path in image_paths)
+    assert "13 de 13 campos incluidos" in text
+    assert len(reader.pages) <= 4

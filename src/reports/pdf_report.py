@@ -93,6 +93,40 @@ def _distribution_chart(counts: dict[str, int], width: float = 470, height: floa
     return drawing
 
 
+def _gallery_layout(total: int) -> tuple[int, int, float, float]:
+    """Columns, rows, preview width and preview height for an adaptive evidence page."""
+    if total == 1:
+        return 1, 1, 14.8*cm, 10.8*cm
+    if total == 2:
+        return 1, 2, 13.5*cm, 7.2*cm
+    if total <= 6:
+        return 2, 3, 7.8*cm, 4.8*cm
+    return 3, 4, 5.15*cm, 3.55*cm
+
+
+def _gallery_cell(result: StudyResult, analysis: ImageAnalysis, preview_path: Path,
+                  width: float, height: float, styles) -> Table:
+    accepted = result.detections_for(analysis)
+    average = sum(d.confidence for d in accepted) / len(accepted) if accepted else 0
+    caption = Paragraph(
+        f"<b>{analysis.image_path.name}</b><br/>"
+        f"{len(accepted)} hallazgos · score {average:.1%}<br/>"
+        f"{_field_counts(result, analysis)}",
+        ParagraphStyle("GalleryCaption", parent=styles["BodyText"], fontSize=7.2,
+                       leading=9, textColor=NAVY, spaceAfter=0),
+    )
+    content = [[Image(str(preview_path), width=width, height=height, kind="proportional")], [caption]]
+    card = Table(content, colWidths=[width + .25*cm], hAlign="CENTER")
+    card.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,-1), colors.white),
+        ("BOX", (0,0), (-1,-1), .45, colors.HexColor("#C7D7DD")),
+        ("LEFTPADDING", (0,0), (-1,-1), 4), ("RIGHTPADDING", (0,0), (-1,-1), 4),
+        ("TOPPADDING", (0,0), (-1,0), 4), ("BOTTOMPADDING", (0,0), (-1,0), 3),
+        ("TOPPADDING", (0,1), (-1,1), 4), ("BOTTOMPADDING", (0,1), (-1,1), 5),
+    ]))
+    return card
+
+
 def generate_pdf(result: StudyResult, output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     doc = SimpleDocTemplate(str(output_path), pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm,
@@ -142,40 +176,35 @@ def generate_pdf(result: StudyResult, output_path: Path) -> Path:
     for message in interpret_study(result): story += [Paragraph(message, styles["BodyText"]), Spacer(1, 4)]
     story += [Spacer(1, 6), Paragraph("Limitación: los conteos representan detecciones por imagen cargada. No equivalen automáticamente a valores clínicos por campo microscópico sin controlar aumento, preparación, área y protocolo. Los indicadores de calidad son heurísticas técnicas, no una evaluación clínica.", styles["Notice"])]
 
-    evidence_limit = 2
-    selected = sorted(result.successful_images, key=lambda image: len(result.detections_for(image)), reverse=True)[:evidence_limit]
+    selected = list(result.successful_images)
     if selected:
-        criterion = "Se incluyen hasta dos campos representativos con mayor número de detecciones aceptadas. Todas las imágenes anotadas pueden exportarse por separado."
-        story += [PageBreak(), Paragraph("Evidencia visual", styles["Section"]), Paragraph(criterion, styles["Sub"])]
+        story += [PageBreak(), Paragraph("Evidencia visual completa", styles["Section"]),
+                  Paragraph(f"Se incluyen los {len(selected)} campos procesados. La cuadrícula se adapta automáticamente al tamaño del estudio; las imágenes anotadas también pueden exportarse en resolución completa.", styles["Sub"])]
     temp_paths: list[Path] = []
+    columns, rows_per_page, preview_width, preview_height = _gallery_layout(len(selected))
+    cards = []
     for index, analysis in enumerate(selected, 1):
-        if index > 1:
-            story.append(PageBreak())
-        accepted = result.detections_for(analysis); average = sum(d.confidence for d in accepted)/len(accepted) if accepted else 0
-        quality = analysis.quality; quality_status = quality.status if quality else "No evaluada"
-        field_story = [Paragraph(f"Campo {index}: {analysis.image_path.name}", styles["Section"]),
-                       _table([["Detecciones", str(len(accepted)), "Score promedio", f"{average:.1%}"],
-                               ["Originales", str(len(analysis.raw_detections)), "Estado de calidad", quality_status],
-                               ["Ocultas/rechazadas", str(len(analysis.hidden_detections(result.confidence_threshold)) + sum(d.human_review == 'incorrecta' for d in analysis.detections)), "Variante", analysis.processing_variant]], [3.7*cm, 3.0*cm, 4.4*cm, 5.9*cm]),
-                       Spacer(1, 7), Paragraph(f"Conteos: {_field_counts(result, analysis)}", styles["BodyText"])]
-        quality_warnings = ", ".join(quality.warnings) if quality and quality.warnings else "Sin alertas técnicas"
-        field_story += [Paragraph(f"Calidad: {quality_warnings}", styles["BodyText"]), Spacer(1, 7)]
-        raw_names = sorted({d.raw_class or d.class_name for d in analysis.detections})
-        normalized_names = sorted({d.class_name for d in analysis.detections})
-        field_story += [Paragraph(f"Clases crudas: {', '.join(raw_names) or 'ninguna'} · Normalizadas: {', '.join(normalized_names) or 'ninguna'}", styles["BodyText"]), Spacer(1, 5)]
-        temp_path = output_path.parent / f".{output_path.stem}_preview_{index}.png"; temp_paths.append(temp_path)
+        temp_path = output_path.parent / f".{output_path.stem}_preview_{index:03d}.png"; temp_paths.append(temp_path)
         try:
             annotated_image(result, analysis, temp_path, preview=True)
-            field_story += [Image(str(temp_path), width=13.5*cm, height=8.0*cm, kind="proportional"), Spacer(1, 7)]
+            cards.append(_gallery_cell(result, analysis, temp_path, preview_width, preview_height, styles))
         except OSError:
-            field_story += [Paragraph("No fue posible incluir la vista previa de este campo.", styles["Notice"])]
-        present_classes = {d.effective_class for d in result.detections_for(analysis)}
-        legend = " &nbsp;&nbsp; ".join(f'<font color="{CLASS_HEX.get(name, "#377DCE")}">■</font> {name.replace("_", " ")}' for name in sorted(present_classes)) or "Sin clases aceptadas"
-        field_story += [Paragraph(f"Leyenda: {legend}", styles["BodyText"])]
-        story.extend(field_story)
-        story.append(Spacer(1, 6))
+            cards.append(Paragraph(f"{analysis.image_path.name}<br/>Vista previa no disponible", styles["Notice"]))
+    page_size = columns * rows_per_page
+    for page_start in range(0, len(cards), page_size):
+        if page_start:
+            story += [PageBreak(), Paragraph("Evidencia visual completa", styles["Section"]),
+                      Paragraph(f"Campos {page_start + 1} a {min(page_start + page_size, len(cards))} de {len(cards)}", styles["Sub"])]
+        page_cards = cards[page_start:page_start + page_size]
+        grid = [page_cards[i:i + columns] for i in range(0, len(page_cards), columns)]
+        while len(grid[-1]) < columns: grid[-1].append("")
+        gallery = Table(grid, colWidths=[17*cm/columns]*columns, hAlign="CENTER")
+        gallery.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"),
+                                     ("LEFTPADDING", (0,0), (-1,-1), 3), ("RIGHTPADDING", (0,0), (-1,-1), 3),
+                                     ("TOPPADDING", (0,0), (-1,-1), 3), ("BOTTOMPADDING", (0,0), (-1,-1), 4)]))
+        story.append(gallery)
     if selected:
-        story.append(Paragraph("Fin de la evidencia seleccionada.", styles["Sub"]))
+        story.append(Paragraph(f"Fin de la evidencia · {len(selected)} de {len(selected)} campos incluidos.", styles["Sub"]))
     try:
         doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
     finally:
