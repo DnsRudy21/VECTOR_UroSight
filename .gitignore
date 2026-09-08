@@ -49,3 +49,15 @@ Thumbs.db
 # Generated documents and archives
 VECTOR_UroSight_*.pdf
 *.zip
+
+# Local credentials, data exports and working notes
+*.p12
+*.pfx
+*.sqlite
+*.sqlite3
+*.db
+*.dcm
+*.cache
+*.bak
+/private/
+/local_archive/

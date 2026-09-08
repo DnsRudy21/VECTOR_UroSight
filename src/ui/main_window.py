@@ -1,3 +1,5 @@
+from src.processing.class_normalizer import class_display_name, normalize_class_name
+from src.processing.aggregator import KNOWN_CLASSES
 from pathlib import Path
 import tempfile
 
@@ -93,7 +95,7 @@ class ClassBarChart(QWidget):
         painter.setFont(self.font()); maximum = max(self._counts.values(), default=1)
         width = max(40, self.width() - 150); y = 8
         for name, total in sorted(self._counts.items(), key=lambda item: item[1], reverse=True):
-            label = name.replace("_", " ").title(); painter.setPen(self.palette().text().color())
+            label = class_display_name(name); painter.setPen(self.palette().text().color())
             painter.drawText(4, y + 15, label[:19]); bar_width = max(3, int(width * total / maximum))
             painter.setPen(Qt.NoPen); painter.setBrush(CLASS_COLORS.get(name, QColor("#31B7B2")))
             painter.drawRoundedRect(125, y + 3, bar_width, 14, 5, 5)
@@ -308,14 +310,22 @@ class MainWindow(QMainWindow):
         if not self._result: return
         result = self._result; counts = result.class_counts(); averages = result.averages_per_image(); self._summary.setRowCount(len(counts))
         for row, (name, total) in enumerate(sorted(counts.items())):
-            for col, value in enumerate((name.replace("_", " ").title(), str(total), f"{averages[name]:.2f}")): self._summary.setItem(row, col, QTableWidgetItem(value))
+            for col, value in enumerate((class_display_name(name), str(total), f"{averages[name]:.2f}")): self._summary.setItem(row, col, QTableWidgetItem(value))
         self._class_chart.set_counts(counts)
         self._count_card.setText(str(sum(counts.values()))); self._confidence_card.setText(f"{result.average_confidence():.1%}")
         self._time_card.setText("Simulado" if result.is_simulated else f"{result.total_inference_ms():.1f} ms"); self._images_card.setText(f"{len(result.successful_images)}/{len(result.images)}")
         self._interpretation.setPlainText("\n\n".join(interpret_study(result)))
         classes = sorted({d.class_name for image in result.successful_images for d in image.detections})
-        self._legend.setText(legend_html(set(classes))); self._corrected_class.clear(); self._corrected_class.addItems(classes)
-        current = self._class_filter.currentText(); self._class_filter.blockSignals(True); self._class_filter.clear(); self._class_filter.addItem("Todas las clases"); self._class_filter.addItems(classes); self._class_filter.setCurrentText(current if current in classes else "Todas las clases"); self._class_filter.blockSignals(False)
+        self._legend.setText(legend_html(set(classes))); self._corrected_class.clear()
+        for name in sorted(KNOWN_CLASSES | set(classes)):
+            self._corrected_class.addItem(class_display_name(name), name)
+        current = self._class_filter.currentData()
+        self._class_filter.blockSignals(True); self._class_filter.clear()
+        self._class_filter.addItem("Todas las clases", None)
+        for name in classes:
+            self._class_filter.addItem(class_display_name(name), name)
+        self._class_filter.setCurrentIndex(max(0, self._class_filter.findData(current)))
+        self._class_filter.blockSignals(False)
 
     def _threshold_changed(self, value: float) -> None:
         if self._result:
@@ -345,18 +355,18 @@ class MainWindow(QMainWindow):
     def _display_analysis(self, analysis: ImageAnalysis) -> None:
         if analysis.error:
             self._viewer.show_pixmap(QPixmap()); self._field_details.setText(f"No se pudo procesar {analysis.image_path.name}: {analysis.error}"); self._detections.setRowCount(0); return
-        selected = self._class_filter.currentText(); visible = None if selected == "Todas las clases" else {selected}
+        selected = self._class_filter.currentData(); visible = None if selected is None else {selected}
         annotated = self._view_mode.currentIndex() == 0 and self._annotations.isChecked(); threshold = self._result.confidence_threshold if self._result else 0
         render_threshold = 0.0 if self._audit_mode.isChecked() else threshold
         self._viewer.show_pixmap(render_analysis(analysis, visible, annotated, render_threshold, self._selected_detection_index)); indexed = [(i, d) for i, d in enumerate(analysis.detections) if (self._audit_mode.isChecked() or d.confidence >= threshold) and (visible is None or d.class_name in visible)]; self._detections.setRowCount(len(indexed))
         self._detections.setProperty("detection_indices", [i for i, _ in indexed])
         for row, (_, d) in enumerate(indexed):
-            values = (d.raw_class or d.class_name, d.class_name.replace("_", " ").title(), f"{d.confidence:.1%}", f"{d.bbox.x:.0f}, {d.bbox.y:.0f}, {d.bbox.width:.0f}, {d.bbox.height:.0f}", "aceptada" if d.confidence >= threshold else "descartada por umbral", d.human_review, d.corrected_class)
+            values = (d.raw_class or d.class_name, class_display_name(d.class_name), f"{d.confidence:.1%}", f"{d.bbox.x:.0f}, {d.bbox.y:.0f}, {d.bbox.width:.0f}, {d.bbox.height:.0f}", "aceptada" if d.confidence >= threshold else "descartada por umbral", d.human_review, d.corrected_class)
             for col, value in enumerate(values): self._detections.setItem(row, col, QTableWidgetItem(value))
         accepted = analysis.accepted_detections(threshold); avg = sum(d.confidence for d in accepted)/len(accepted) if accepted else 0
         counts: dict[str, int] = {}
         for detection in accepted: counts[detection.class_name] = counts.get(detection.class_name, 0) + 1
-        count_text = ", ".join(f"{name.replace('_', ' ')}: {total}" for name, total in sorted(counts.items())) or "sin detecciones"
+        count_text = ", ".join(f"{class_display_name(name)}: {total}" for name, total in sorted(counts.items())) or "sin detecciones"
         quality = analysis.quality; quality_text = "Sin evaluación"
         if quality: quality_text = f"{quality.status} · {quality.width}×{quality.height} · brillo {quality.brightness:.0f} · contraste {quality.contrast:.0f} · nitidez {quality.sharpness:.0f}"
         warnings = list(analysis.warnings) + (list(quality.warnings) if quality else [])
@@ -372,14 +382,19 @@ class MainWindow(QMainWindow):
                 box = self._result.images[self._files.currentRow()].detections[self._selected_detection_index].bbox
                 self._viewer.centerOn(box.x, box.y)
 
+    def _review_class_value(self) -> str:
+        text = self._corrected_class.currentText().strip()
+        index = self._corrected_class.findText(text)
+        return self._corrected_class.itemData(index) if index >= 0 else normalize_class_name(text)
+
     def _apply_review(self) -> None:
         if not self._result or self._selected_detection_index is None: return
         image = self._result.images[self._files.currentRow()]; status = self._review_status.currentText()
         if status == "elemento_omitido":
-            image.omitted_elements.append({"status": status, "class": self._corrected_class.currentText().strip()})
+            image.omitted_elements.append({"status": status, "class": self._review_class_value()})
         else:
             detection = image.detections[self._selected_detection_index]; detection.human_review = status
-            detection.corrected_class = self._corrected_class.currentText().strip() if status == "clase_equivocada" else ""
+            detection.corrected_class = self._review_class_value() if status == "clase_equivocada" else ""
         self._update_study_results(); self._refresh_view(); self.statusBar().showMessage("Revisión humana guardada en el estudio; use Exportar para persistirla.")
 
     def _export_file(self, label: str, suffix: str, file_filter: str, writer) -> None:

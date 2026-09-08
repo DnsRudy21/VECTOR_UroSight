@@ -1,5 +1,23 @@
 # Model Card — VECTOR UroSight
 
+## Auditoría de identidad — 2026-09-08
+
+El checkpoint recuperado de la aplicación portátil tiene SHA-256
+`c5fba1aeccb60ca8eac49c1750123a5dc85f22456f02f805f62fff6386669530`, arquitectura
+YOLO11s y siete clases. Sus argumentos declaran el entrenamiento dirigido a 448 px
+con máximo de 15 épocas. Esta ficha describe el modelo vigente.
+La nueva evaluación de validation reproduce exactamente
+precision 0.8250585355, recall 0.8154298249, mAP50 0.8677050042 y mAP50–95 0.5093572068.
+Esos P/R corresponden al punto de máximo F1 de Ultralytics, no a conteos en un umbral fijo.
+La latencia de esta nueva corrida no es válida por una interrupción del reloj de pared.
+La auditoría y los límites de QA sintético se detallan en `SILVER_REVIEW_DIAGNOSIS.md`.
+Los resultados históricos de TEST no se presentan como una nueva ejecución de TEST.
+
+El piloto de este ciclo (SHA-256 `4410c4e7709ce04510570140f6b5b22403afc623bda8a28733a9165d287e99cf`)
+fue rechazado: validation mAP50–95 0.505667 frente a 0.509357 del modelo operativo,
+con deterioro también en cast, mycete y epithn. No se abrió TEST para este candidato.
+El modelo operativo y sus pesos permanecen intactos.
+
 ## Estado
 
 Modelo experimental entrenado y evaluado. Está integrado para uso local supervisado, pero no está clínicamente validado.
@@ -27,16 +45,16 @@ Detector de partículas en imágenes microscópicas de sedimento urinario para u
 - Arquitectura: YOLO11s mediante transferencia de aprendizaje, sin entrenamiento desde cero.
 - Implementación: Ultralytics 8.4.90, PyTorch 2.12.1+cpu.
 - Hardware auditado: Intel Core i7-7700HQ; CUDA no disponible.
-- Resolución de entrenamiento: 320 px.
+- Resolución de entrenamiento confirmada en el checkpoint: 448 px.
 - Configuración operativa seleccionada en validación: 448 px con inferencia aumentada.
-- Batch: 8; máximo 30 épocas; patience 7; seed 42; workers 0.
-- Selección: fitness de Ultralytics sobre validación interna; mejor checkpoint en época 30.
+- Batch: 4; máximo 15 épocas; patience 6; seed 42; workers 0.
+- Selección histórica documentada: época 13 de 15. El checkpoint distribuido está depurado (`epoch=-1`) y no confirma por sí solo la época seleccionada.
 - Umbral operativo: 0.443443 (mostrado como 0.44), seleccionado exclusivamente en validation por máximo F1 medio global.
-- SHA-256 de pesos: `693e2a1b90601c962f1f83c88ba655a0cb55e974a5d084a0d229b703d6faa02f`.
+- SHA-256 de pesos: `c5fba1aeccb60ca8eac49c1750123a5dc85f22456f02f805f62fff6386669530`.
 
 ## Datos
 
-Fuente principal: USE, formato Pascal VOC. El dataset maestro derivado contiene 5,292 imágenes y 41,695 objetos tras excluir imágenes ilegibles y duplicados exactos entre splits. Splits: 4,176 train, 848 validación y 268 test.
+Fuente principal: USE, formato Pascal VOC. La auditoría histórica documentó 5,292 imágenes y 41,695 objetos tras excluir imágenes ilegibles y duplicados exactos entre splits (4,176 train, 848 validación y 268 test). La fuente recuperada en este ciclo produce 5,293 imágenes y 41,697 objetos (4,177 train, 848 validación y 268 test); esta reconstrucción y su diferencia de una imagen están documentadas en HARD_CASE_ANNOTATION_AUDIT.md.
 
 Clases: `eryth`, `leuko`, `epith`, `epithn`, `cast`, `cryst` y `mycete`. La ontología y los conteos se detallan en `CLASS_ONTOLOGY.md`.
 
@@ -58,7 +76,7 @@ La configuración final congelada, YOLO11s a 448 px con aumento, obtuvo en test 
 
 Por clase, mAP@50–95 en test final: `eryth` 0.562566, `leuko` 0.478175, `epith` 0.572052, `epithn` 0.328274, `cast` 0.382359, `cryst` 0.576591 y `mycete` 0.561804. `epithn` continúa siendo la clase más débil por esta métrica.
 
-En UMID externo, limitado a las tres clases compatibles, obtuvo precision 0.5238, recall 0.1199, mAP@50 0.0685 y mAP@50–95 0.0348. La caída evidencia domain shift severo y limita la generalización fuera de USE.
+La evaluación histórica del proyecto en UMID, limitada a las tres clases compatibles, registró precision 0.5238, recall 0.1199, mAP@50 0.0685 y mAP@50–95 0.0348. Es un antecedente de cambio de dominio severo, no una evaluación externa nueva ni una medición verificada del checkpoint YOLO11s actual. UMID no estaba disponible durante la auditoría de septiembre; la validación externa del modelo vigente queda pendiente.
 
 ## Limitaciones y riesgos
 

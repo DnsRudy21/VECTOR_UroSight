@@ -6,7 +6,9 @@ class LocalYoloProvider(InferenceProvider):
     display_name = "YOLO11s"
     is_simulated = False
     def __init__(self, model_path: Path, confidence: float = 0.44, imgsz: int = 448,
-                 augment: bool = True) -> None:
+                 augment: bool = True, max_detections: int = 300) -> None:
+        if not isinstance(max_detections, int) or isinstance(max_detections, bool) or max_detections <= 0:
+            raise ValueError("max_detections debe ser un entero positivo.")
         if not model_path.exists():
             raise FileNotFoundError(f"No existe el modelo local: {model_path}")
         from ultralytics import YOLO
@@ -16,6 +18,7 @@ class LocalYoloProvider(InferenceProvider):
         self._confidence = confidence
         self._imgsz = imgsz
         self._augment = augment
+        self.max_detections = max_detections
         self.confidence_threshold = confidence
 
     def predict(self, image_path: Path) -> ImageAnalysis:
@@ -24,6 +27,7 @@ class LocalYoloProvider(InferenceProvider):
             conf=self._confidence,
             imgsz=self._imgsz,
             augment=self._augment,
+            max_det=self.max_detections,
             verbose=False,
         )[0]
         detections = []
@@ -52,4 +56,6 @@ class LocalYoloProvider(InferenceProvider):
             image_path=image_path,
             detections=detections,
             inference_ms=float(speed.get("inference", 0.0)),
+            warnings=([f"Se alcanzó el límite de {self.max_detections} detecciones; posible truncamiento del campo."]
+                      if len(detections) >= self.max_detections else []),
         )

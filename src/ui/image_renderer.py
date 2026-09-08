@@ -1,3 +1,4 @@
+from src.processing.class_normalizer import class_display_name
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont, QImage, QPainter, QPen, QPixmap
 
@@ -19,7 +20,7 @@ def legend_html(classes: set[str]) -> str:
     parts = []
     for name in sorted(classes):
         color = CLASS_COLORS.get(name, QColor("#6ea8fe")).name()
-        parts.append(f'<font color="{color}">■</font> {name.replace("_", " ")}')
+        parts.append(f'<font color="{color}">■</font> {class_display_name(name)}')
     return "Leyenda: " + " &nbsp; ".join(parts) if parts else "Leyenda: sin clases visibles"
 
 
@@ -47,7 +48,7 @@ def render_analysis(analysis: ImageAnalysis, visible_classes: set[str] | None = 
         box = detection.bbox
         x, y = box.x - box.width / 2, box.y - box.height / 2
         painter.drawRect(int(x), int(y), int(box.width), int(box.height))
-        label = f"{detection.class_name.replace('_', ' ')}  {detection.confidence:.0%}"
+        label = f"{class_display_name(detection.class_name)}  {detection.confidence:.0%}"
         metrics = painter.fontMetrics()
         width = metrics.horizontalAdvance(label) + 12
         top = max(0, int(y) - 24)

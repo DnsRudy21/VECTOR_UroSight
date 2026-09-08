@@ -1,28 +1,12 @@
 # Comparación de modelos
 
-## Estado actual
+Evaluación del 8 de septiembre de 2026: 848 imágenes reales de validación, 5,940 objetos; 448 px, batch 4 e inferencia aumentada. AP usa confianza mínima 0.001. Precisión y recall corresponden al máximo F1 de Ultralytics.
 
-El baseline YOLO11n terminó 30 épocas. No se presentan métricas ficticias ni resultados parciales como finales.
+| Modelo | Precisión | Recall | mAP@50 | mAP@50–95 | Decisión |
+|:---|---:|---:|---:|---:|:---|
+| YOLO11s operativo | 0.825059 | 0.815430 | 0.867705 | 0.509357 | Conservar |
+| Piloto dirigido, 3 épocas | 0.821721 | 0.822326 | 0.871625 | 0.505667 | No promover |
 
-## Variante activa
+El candidato también perdió AP50–95 en cilindros, núcleos epiteliales y levaduras/hongos. TEST permaneció reservado. El aumento de recall global y AP50 no compensó la caída del criterio de selección ni de las clases prioritarias.
 
-| Run | Arquitectura | Resolución | Batch | Hardware | Estado |
-|-----|--------------|------------|-------|----------|--------|
-| `baseline_yolo11n_320` | YOLO11n preentrenado | 320 | 8 | CPU Intel Core i7-7700HQ | Completado, 30 épocas; test mAP@50 0.7526, mAP@50–95 0.4293 |
-
-La corrida de medición con 2 % del train confirmó viabilidad y permitió estimar tiempos, pero no participa en selección porque no representa un entrenamiento comparable.
-
-## Criterios de selección
-
-- mAP@50–95 y mAP@50 en validación.
-- Precision y recall globales y por clase.
-- Rendimiento de clases minoritarias.
-- Estabilidad entre épocas.
-- Tamaño del checkpoint y tiempo de inferencia local.
-- Análisis de falsos positivos, falsos negativos y confusiones.
-
-El test interno no participa en la comparación. Se usa una sola vez después de congelar el checkpoint y threshold.
-
-## Variante de mayor capacidad
-
-No se entrenó YOLO11s porque el equipo solo dispone de CPU y el baseline de 30 épocas consumió varias horas. Una corrida mayor excedería el alcance temporal sin garantizar mejora y no sería una comparación equivalente si se acorta. YOLO11n ofrece 2.58 M de parámetros, un checkpoint de ~5.4 MB y 14.6 ms de inferencia de evaluación por imagen en esta CPU. Una variante mayor queda como experimento futuro controlado, no como requisito de liberación.
+Los hashes, resultados por clase, configuración y comparaciones a umbral fijo están en el [informe experimental](MODEL_IMPROVEMENT_REPORT.md). Las variantes anteriores se documentan en el historial Git; no representan el modelo activo.

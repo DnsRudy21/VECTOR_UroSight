@@ -4,7 +4,8 @@ import argparse
 from pathlib import Path
 
 REQUIRED_DOCS = (
-    "README.md", "LICENSE", "COPYRIGHT", "SECURITY.md", "THIRD_PARTY_NOTICES.md", ".env.example",
+    "README.md", "README.en.md", "LICENSE", "COPYRIGHT", "SECURITY.md", "THIRD_PARTY_NOTICES.md", ".env.example",
+    "docs/PUBLISHING.md", "docs/RETRAINING.md",
     "docs/PROJECT_STATUS.md", "docs/DECISIONS.md",
     "docs/MODEL_CARD.md", "docs/CLASS_ONTOLOGY.md", "docs/ERROR_ANALYSIS.md", "docs/MODEL_COMPARISON.md",
 )

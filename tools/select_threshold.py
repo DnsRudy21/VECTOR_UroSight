@@ -16,12 +16,26 @@ def select(rows: list[dict]) -> dict:
     return max(rows, key=lambda row: (row["f1"], row["recall"], -row["threshold"]))
 
 
+def fixed_threshold_metrics(box, threshold: float) -> tuple[float, float]:
+    """Ultralytics mp/mr are at max-F1, not at the requested cutoff.
+
+    Curves provide interpolated values. For exact TP/FP/FN counts use
+    tools.validation_experiments, which rematches saved predictions.
+    """
+    import numpy as np
+    precision = [np.interp(threshold, box.px, curve) for curve in box.p_curve]
+    recall = [np.interp(threshold, box.px, curve) for curve in box.r_curve]
+    if not precision or not recall:
+        raise ValueError("No hay curvas por clase para seleccionar threshold.")
+    return float(np.mean(precision)), float(np.mean(recall))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Selecciona threshold exclusivamente sobre validación.")
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--data", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--thresholds", type=float, nargs="+", default=(0.25, 0.35, 0.50))
+    parser.add_argument("--thresholds", type=float, nargs="+", default=(0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50))
     parser.add_argument("--imgsz", type=int, default=320)
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--augment", action="store_true")
@@ -34,13 +48,13 @@ def main() -> int:
                             batch=args.batch, device="cpu", workers=0, plots=False,
                             verbose=False, augment=args.augment, project=str(args.output.resolve()),
                             name=f"threshold_{threshold:.2f}", exist_ok=True)
-        precision, recall = float(metrics.box.mp), float(metrics.box.mr)
+        precision, recall = fixed_threshold_metrics(metrics.box, threshold)
         rows.append({"threshold": threshold, "precision": precision, "recall": recall, "f1": f1(precision, recall), "map50": float(metrics.box.map50), "map50_95": float(metrics.box.map)})
     recommended = select(rows)
     args.output.mkdir(parents=True, exist_ok=True)
     with (args.output / "threshold_comparison.csv").open("w", newline="", encoding="utf-8-sig") as handle:
         writer = csv.DictWriter(handle, fieldnames=rows[0].keys()); writer.writeheader(); writer.writerows(rows)
-    payload = {"selection_split": "validation", "criterion": "maximum global F1; recall then lower threshold as tie breakers", "imgsz": args.imgsz, "augment": args.augment, "recommended_threshold": recommended["threshold"], "results": rows}
+    payload = {"selection_split": "validation", "metric_method": "interpolated per-class curves at requested threshold; not max-F1 mp/mr", "criterion": "maximum F1 of macro precision/recall; recall then lower threshold as tie breakers", "imgsz": args.imgsz, "augment": args.augment, "recommended_threshold": recommended["threshold"], "results": rows}
     (args.output / "threshold_comparison.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(json.dumps(payload, indent=2))
     return 0

@@ -7,6 +7,7 @@ from src.inference.mock_provider import MockInferenceProvider
 from src.reports.pdf_report import export_annotated_images, generate_pdf
 from src.services.analysis_service import AnalysisService
 from src.services.export_service import export_csv, export_json
+from src.domain.models import BoundingBox, Detection, ImageAnalysis, StudyResult
 
 
 def test_structured_exports_and_readable_pdf(tmp_path):
@@ -38,6 +39,19 @@ def test_structured_exports_and_readable_pdf(tmp_path):
     assert annotated[0].is_file()
     with Image.open(annotated[0]) as exported:
         assert exported.size == (640, 480)
+
+
+def test_pdf_handles_review_into_previously_absent_class_and_saturation(tmp_path):
+    image = tmp_path / 'field.png'; Image.new('RGB', (100, 100), 'gray').save(image)
+    detection = Detection('eritrocitos', .8, BoundingBox(30, 30, 10, 10),
+                          raw_class='eryth', human_review='clase_equivocada',
+                          corrected_class='celulas_epiteliales_nucleadas')
+    result = StudyResult([ImageAnalysis(image, [detection],
+                          warnings=['Se alcanzó el límite: posible truncamiento.'])])
+    assert result.fields_by_class() == {'celulas_epiteliales_nucleadas': 1}
+    output = generate_pdf(result, tmp_path / 'review.pdf')
+    text = ' '.join(page.extract_text() or '' for page in PdfReader(str(output)).pages)
+    assert 'Núcleos epiteliales' in text and 'truncamiento' in text
 
 
 def test_pdf_includes_every_field_in_compact_adaptive_gallery(tmp_path):

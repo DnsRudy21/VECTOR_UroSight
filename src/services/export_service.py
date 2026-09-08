@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 from src.domain.models import StudyResult
+from src.processing.class_normalizer import class_display_name
 
 
 def detection_rows(result: StudyResult) -> list[dict[str, object]]:
@@ -20,6 +21,7 @@ def detection_rows(result: StudyResult) -> list[dict[str, object]]:
                          "processing_variant": image.processing_variant, "detection_id": detection.detection_id,
                          "raw_class": detection.raw_class or detection.class_name,
                          "normalized_class": detection.class_name, "effective_class": detection.effective_class,
+                         "display_class": class_display_name(detection.effective_class),
                          "model": detection.model_id, "confidence": round(detection.confidence, 4),
                          "status": "accepted" if detection.confidence >= result.confidence_threshold else "discarded_by_threshold",
                          "requires_review": detection.requires_review,
@@ -66,7 +68,7 @@ def export_csv(result: StudyResult, output_path: Path) -> Path:
     fields = ["study_id", "patient_id", "patient_name", "provider", "simulated", "threshold", "image", "source_image", "processing_variant",
               "detection_id", "raw_class", "normalized_class", "effective_class", "model", "confidence", "status",
               "requires_review", "review_reasons", "human_review", "corrected_class", "review_note",
-              "x", "y", "width", "height", "error"]
+              "x", "y", "width", "height", "error", "display_class"]
     with output_path.open("w", newline="", encoding="utf-8-sig") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
         writer.writeheader(); writer.writerows(detection_rows(result))

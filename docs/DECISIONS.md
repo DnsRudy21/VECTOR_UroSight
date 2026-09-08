@@ -1,103 +1,31 @@
-# Registro de decisiones
+# Decisiones de diseño
 
-## D-001 — PySide6
-Aplicación de escritorio profesional y extensible.
+## Aplicación local y revisión humana
 
-## D-002 — Proveedor intercambiable
-La inferencia se abstrae para evitar dependencia permanente de una plataforma.
+PySide6 implementa la interfaz. La inferencia corre en un hilo de Qt y cada imagen conserva su estado, errores y resultados. El proveedor simulado permite probar el flujo sin pesos y siempre se identifica como tal. No hay proveedor remoto.
 
-## D-003 — Reglas auditables
-La primera interpretación se genera mediante reglas explícitas.
+## Trazabilidad de detecciones
 
-## D-004 — Mock-first
-La GUI se desarrolla y valida primero con un proveedor simulado.
+Se conservan clase original, clase canónica, confianza, geometría, imagen y modelo. La normalización aplica NMS por clase a IoU 0.50. Las correcciones humanas afectan las salidas revisadas sin sobrescribir la predicción original. El identificador legado de `epithn` se mantiene por compatibilidad; su texto visible es «Núcleos epiteliales».
 
-## D-005 — Estudio multimagen y fallos parciales
-Cada imagen representa un campo del mismo estudio. Los errores se conservan por campo y no invalidan resultados correctos de otras imágenes.
+## Identidad y resultados
 
-## D-006 — Procesamiento en hilo de Qt
-La inferencia usa un worker en `QThread`. La cancelación ocurre entre imágenes y la GUI evita ejecuciones duplicadas.
+El identificador del estudio es local y el nombre del paciente es opcional. No hay expediente ni integración con un sistema clínico institucional. Los conteos se expresan por imagen, sin equivalencia clínica automática por campo.
 
-## D-007 — Dependencias opcionales
-La instalación base incluye el modo demostración. Ultralytics se instala por separado para evitar descargas innecesarias.
+## Datos y separación experimental
 
-## D-008 — Métricas no equivalentes a valores clínicos
-Los promedios se rotulan por imagen procesada. No se convierten a valores clínicos ni se inventan rangos.
+USE aporta siete clases; UMID se reserva para evaluación externa de las clases compatibles. Los duplicados exactos se resuelven con prioridad test → validación → train. Las cajas ajustadas conservan registro de coordenadas originales. Las fuentes no se modifican.
 
-## D-009 — Sin datos clínicos incluidos
-El repositorio no incorpora imágenes, datasets o pesos. Las capturas deberán usar material autorizado o sintético.
+Los modelos e hiperparámetros se seleccionan en validación. TEST no interviene en el ajuste. Debido a las evaluaciones históricas del mismo test, nuevas afirmaciones de generalización requieren un conjunto externo adicional y congelado.
 
-## D-010 — Trazabilidad antes que descarte
-Las detecciones originales se conservan. La salida depurada diferencia detecciones aceptadas, ocultas por umbral y marcadas para revisión.
+## Modelo vigente
 
-## D-011 — NMS neutral
-La normalización aplica NMS por clase con IoU 0.50 después de resolver alias. Las cajas fuera de límites se ajustan y quedan marcadas para revisión.
+Se conserva YOLO11s a 448 px con aumento. El checkpoint histórico seleccionado en época 13 obtuvo mAP50–95 de validación 0.509357, reproducido en septiembre de 2026. Su hash y procedencia están en la [ficha del modelo](MODEL_CARD.md).
 
-## D-012 — Calidad técnica no bloqueante
-Brillo, contraste y varianza de bordes usan umbrales explícitos documentados. No rechazan imágenes ni representan calidad clínica.
+El piloto dirigido de septiembre se rechazó por caída global y en las tres clases prioritarias. El paquete Silver se usa solo para QA sintético. CLAHE y otras transformaciones no se activaron al no ofrecer una mejora consistente. El límite de detecciones permanece en 300 y ahora genera un aviso al alcanzarse.
 
-## D-013 — Transparencia del proveedor
-El proveedor activo y la condición simulada forman parte del dominio y de todas las salidas. Los tiempos del mock no se presentan como rendimiento real.
+## Distribución
 
-## D-015 — Umbral único desde configuración
-`CONFIDENCE_THRESHOLD` configura la inferencia local, el resultado del estudio y el valor inicial del control de interfaz. Los cambios posteriores del usuario solo filtran las detecciones ya recibidas.
+Se publica código fuente bajo AGPL-3.0-only con avisos de terceros. Datasets, imágenes clínicas, pesos, portables y resultados privados quedan fuera de Git. PySide6 6.8.3 se conserva por compatibilidad verificada del portable; actualizarlo requiere volver a probar la carga de QtWidgets en el ejecutable.
 
-## D-019 — Preprocesamiento experimental no combinable
-CLAHE, ajuste moderado y reducción ligera de ruido generan copias temporales. La variante queda rotulada y sus resultados no se mezclan con el análisis original.
-
-## D-020 — Auditoría separada por fuente y nivel de derivación
-USE y UMID se auditan por separado. `datasets` contiene fuentes y `data_processed` derivados; no se suman como datasets independientes ni se consideran duplicados científicos solo por aparecer en ambos niveles.
-
-## D-021 — Ontología conservadora
-`epithn` se conserva como núcleo epitelial independiente de `epith`, de acuerdo con el README de USE. Las equivalencias `rbc/eryth`, `pus/leuko` y `ep/epith` conservan siempre clase cruda y fuente para no ocultar diferencias de dominio o anotación.
-
-## D-022 — Entrenamiento condicionado a auditoría reproducible
-No se inicia entrenamiento hasta validar correspondencias imagen-etiqueta, cajas, duplicados y splits. El equipo disponible es CPU sin CUDA; el ETA se calculará solo después de una corrida corta con segundos por época medidos.
-
-## D-023 — USE para entrenamiento y UMID para validación externa
-El baseline de siete clases se prepara con USE. UMID se reserva como conjunto externo independiente para `eritrocitos`, `leucocitos` y `celulas_epiteliales`; no se usa para ajustar hiperparámetros ni umbrales.
-
-## D-024 — Deduplicación con prioridad de aislamiento
-Al encontrar imágenes idénticas en varios splits se conserva una sola. La prioridad es test, luego validación y finalmente entrenamiento, evitando que una imagen del test reaparezca durante ajuste. Las cajas negativas de uno o dos píxeles se recortan al límite durante la conversión y quedan registradas; los originales no se modifican.
-
-## D-025 — Baseline YOLO11n a 320 px en CPU
-La medición local mostró 7 min 43 s para entrenar una época completa y 36 s para validar 848 imágenes. Se eligió YOLO11n a 320 px, batch 8, máximo 30 épocas y patience 7 como baseline viable en CPU. La resolución es una restricción operativa, no una afirmación de optimalidad clínica.
-
-## D-026 — Selección en validación y uso único de test
-El checkpoint se selecciona por mAP@50–95 de validación. Thresholds y decisiones de configuración se comparan en validación. El test interno permanece aislado y se evalúa una sola vez después de congelar modelo y threshold.
-
-## D-027 — Checkpoint final y umbral congelados
-La corrida YOLO11n completó 30 épocas y seleccionó la época 30. El umbral 0.25 se eligió exclusivamente en validación por máximo F1 global antes de evaluar test. Los pesos se identifican por SHA-256 `693e2a1b90601c962f1f83c88ba655a0cb55e974a5d084a0d229b703d6faa02f`.
-
-## D-028 — Domain shift externo como limitación crítica
-UMID obtuvo recall 0.1199 y mAP@50–95 0.0348 frente a 0.7476 y 0.4293 en test interno. El modelo se limita al dominio experimental documentado y no se presenta como generalizable ni clínicamente validado.
-
-## D-029 — No entrenar una variante mayor en CPU
-YOLO11s no se ejecuta porque no hay GPU, el baseline completo consumió varias horas y una corrida abreviada no sería comparable. YOLO11n satisface la integración local y deja la comparación de mayor capacidad como experimento futuro, condicionado a hardware y protocolo equivalentes.
-
-## D-030 — Calidad operativa separada de exactitud clínica
-La repetibilidad, ausencia de fallos y latencia se verifican con seis imágenes y tres rondas idénticas. Esta puerta operativa no mide sensibilidad ni especificidad y no puede compensar la baja generalización observada en UMID. Acercarse a 100 % exige un conjunto representativo rotulado y revisión de especialistas.
-
-## D-031 — Identidad de paciente mínima y transitoria
-Cada selección genera un ID `PT-AAAAMMDD-XXXXXX`; el nombre es opcional y ambos viajan con el resultado y sus exportaciones. No se implementa expediente, base de datos ni interoperabilidad clínica en esta fase, para evitar presentar un identificador local como identidad institucional.
-
-## D-032 — Portable Windows autocontenido y sin secretos
-El paquete `onedir` incluye Python, PySide6, el runtime de inferencia y el checkpoint congelado. No incluye `.env`, API keys ni datasets. La portabilidad se limita a Windows x64 compatible y la redistribución externa de pesos queda condicionada a su licencia.
-
-## D-033 — Publicación fuente mínima bajo AGPL-3.0
-El repositorio público excluye datasets, imágenes, pesos, checkpoints, portables, resultados generados, credenciales y artefactos de entrenamiento. Debido a la integración opcional con Ultralytics, el código público se alinea con AGPL-3.0. Cualquier distribución propietaria o comercial debe revisar licencias Enterprise de Ultralytics, términos de Qt y obligaciones regulatorias con asesoría independiente.
-
-## D-034 — Resolución operativa de 480 px
-Sin modificar los pesos, se compararon 320, 480, 640 y 960 px exclusivamente sobre validation. 480 px obtuvo el mejor mAP@50 (0.789789) y mAP@50–95 (0.454004). El umbral 0.25 se conservó porque elevarlo a 0.453 no mejoró precision ni mAP. Con la configuración congelada, la evaluación formal posterior en test obtuvo precision 0.786285, recall 0.818092, mAP@50 0.825461 y mAP@50–95 0.469418. Un ajuste corto con backbone congelado fue descartado en validation por desempeño inferior; sus pesos no se distribuyen.
-
-## D-035 — PySide6 6.8.3 fijado para el portable
-PySide6 6.11.1 produjo un fallo de carga de `QtWidgets` únicamente dentro del ejecutable congelado. Se fijó 6.8.3 y se validó el paquete final ejecutando inferencia local sobre cinco imágenes: cinco exitosas, cero fallidas. La prueba también confirma la inclusión del modelo y sus dependencias de ejecución.
-
-## D-036 — Inferencia aumentada a 448 px
-La configuración de 480 px redujo de 48 a 36 las detecciones visibles respecto al portable anterior sobre cinco imágenes sintéticas. Sin usar esas imágenes sin ground truth para seleccionar métricas, se exploraron resoluciones finas y aumento exclusivamente en validation. 448 px con aumento obtuvo precision 0.778917, recall 0.796293, mAP@50 0.810809 y mAP@50–95 0.470846. Congelada la configuración, test obtuvo 0.771033, 0.815977, 0.835967 y 0.487220, respectivamente. En las cinco imágenes sintéticas recuperó 86 detecciones y un score medio de 0.5339; esto es una comprobación operativa, no evidencia de exactitud.
-
-## D-037 — Promoción controlada de YOLO11s dirigido
-Se entrenó YOLO11s durante 15 épocas con 4,177 imágenes originales y 2,036 teselas dirigidas generadas únicamente desde train; validation (848) y test (268) permanecieron sin cambios. La época 13 superó al campeón anterior en validation homogénea a 448 px con aumento: precision 0.825059, recall 0.815430, mAP@50 0.867705 y mAP@50–95 0.509357. El umbral 0.443443 se obtuvo del máximo F1 medio de validation (0.821226). Solo después se abrió test: precision 0.808721, recall 0.813571, mAP@50 0.854268 y mAP@50–95 0.494546. Se promovió el nuevo checkpoint; el campeón anterior quedó preservado como respaldo.
-
-## D-037 — Operación exclusivamente local
-La integración remota se retiró por completo del código, configuración, dependencias, pruebas y documentación activa. El portable usa exclusivamente el checkpoint YOLO incluido y no necesita Internet. El proveedor simulado se conserva solo para desarrollo y se identifica inequívocamente en pantalla y exportaciones.
+Los cambios posteriores al empaquetado están en el código fuente. El portable no se reconstruyó durante la revisión de septiembre. Las decisiones históricas sustituidas pueden consultarse en el historial Git.

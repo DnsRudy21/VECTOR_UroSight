@@ -12,7 +12,8 @@ from src.ui.main_window import MainWindow
 def build_provider():
     if settings.inference_provider == "local":
         return LocalYoloProvider(settings.local_model_path, settings.confidence_threshold,
-                                 settings.local_model_imgsz, settings.local_model_augment)
+                                 settings.local_model_imgsz, settings.local_model_augment,
+                                 settings.local_model_max_detections)
     return MockInferenceProvider()
 
 

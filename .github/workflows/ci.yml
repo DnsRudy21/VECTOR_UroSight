@@ -42,3 +42,6 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: python -m pytest -q
+
+      - name: Check publication files
+        run: python -m tools.publication_check --no-history

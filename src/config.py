@@ -48,6 +48,16 @@ def _boolean_from_env(name: str, default: bool = False) -> bool:
     return raw in {"1", "true", "yes"}
 
 
+def _max_detections_from_env() -> int:
+    try:
+        value = int(os.getenv("LOCAL_MODEL_MAX_DETECTIONS", "300"))
+    except ValueError as exc:
+        raise ValueError("LOCAL_MODEL_MAX_DETECTIONS debe ser un entero positivo.") from exc
+    if value <= 0:
+        raise ValueError("LOCAL_MODEL_MAX_DETECTIONS debe ser un entero positivo.")
+    return value
+
+
 @dataclass(frozen=True)
 class Settings:
     inference_provider: str
@@ -55,6 +65,7 @@ class Settings:
     local_model_imgsz: int
     local_model_augment: bool
     confidence_threshold: float
+    local_model_max_detections: int = 300
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -66,7 +77,7 @@ class Settings:
         default_model = bundled_model if getattr(sys, "frozen", False) else Path("models/vector_urosight/best.pt")
         return cls(provider, Path(os.getenv("LOCAL_MODEL_PATH", str(default_model))), _imgsz_from_env(),
                    _boolean_from_env("LOCAL_MODEL_AUGMENT", True),
-                   _confidence_from_env())
+                   _confidence_from_env(), _max_detections_from_env())
 
 
 settings = Settings.from_environment()

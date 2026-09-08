@@ -1,6 +1,9 @@
 from src.inference.mock_provider import MockInferenceProvider
 from src.services.analysis_service import AnalysisService
 from src.ui.main_window import MainWindow
+from src.domain.models import BoundingBox, Detection, ImageAnalysis, StudyResult
+from src.processing.aggregator import KNOWN_CLASSES
+from pathlib import Path
 
 
 def test_main_window_starts(qtbot):
@@ -19,3 +22,19 @@ def test_main_window_starts(qtbot):
         "Reporte clínico PDF", "Imágenes anotadas", "Estadísticas CSV"
     ]
     assert window.minimumWidth() >= 1120
+
+
+def test_nucleus_filter_and_review_store_canonical_ids(qtbot):
+    window = MainWindow(AnalysisService(MockInferenceProvider()))
+    qtbot.addWidget(window)
+    canonical = 'celulas_epiteliales_nucleadas'
+    window._result = StudyResult([ImageAnalysis(Path('unused.png'),
+        [Detection(canonical, .8, BoundingBox(10, 10, 5, 5), raw_class='epithn')])])
+    window._update_study_results()
+    index = window._class_filter.findText('Núcleos epiteliales')
+    assert index >= 0 and window._class_filter.itemData(index) == canonical
+    assert {window._corrected_class.itemData(i) for i in range(window._corrected_class.count())} == KNOWN_CLASSES
+    window._corrected_class.setCurrentText('Núcleos epiteliales')
+    assert window._review_class_value() == canonical
+    window._corrected_class.setEditText('cast')
+    assert window._review_class_value() == 'cilindros'

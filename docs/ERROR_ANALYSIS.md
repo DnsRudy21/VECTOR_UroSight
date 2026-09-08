@@ -1,34 +1,19 @@
 # Análisis de errores
 
-## Estado
+## Modelo operativo
 
-Ejecutado con checkpoint y umbral congelados. El protocolo se definió antes de observar el test.
+La revisión actual usa las 848 imágenes reales de validación a 448 px. Los errores prioritarios afectan cilindros, agrupaciones de levaduras/hongos, núcleos pequeños y campos densos. Consulte el [diagnóstico por clase](SILVER_REVIEW_DIAGNOSIS.md) y la [auditoría de anotaciones](HARD_CASE_ANNOTATION_AUDIT.md).
 
-## Protocolo
+## Método
 
-- Split: test interno deduplicado, 268 imágenes.
-- Threshold: seleccionado previamente sobre validación.
-- Emparejamiento: IoU ≥ 0.50, uno a uno y por clase.
-- Verdadero positivo: predicción y anotación de la misma clase emparejadas.
-- Falso positivo: predicción sin anotación de la misma clase emparejable.
-- Falso negativo: anotación sin predicción de la misma clase emparejable.
-- Clasificación errónea: predicción y anotación con IoU ≥ 0.50 pero clases diferentes.
+Las comparaciones a confianza 0.44 emparejan cajas uno a uno, por clase, con IoU ≥ 0.50. Una confusión de clase contribuye a un falso positivo y un falso negativo. Se distinguen las predicciones del detector de la NMS adicional de la aplicación.
 
-La herramienta `tools/error_analysis.py` genera conteos globales, desglose por clase y hasta veinte nombres de imágenes de ejemplo por categoría. No cambia etiquetas ni reentrena el modelo.
+La NMS de la aplicación eliminó 144 cajas en validación: 135 falsos positivos y 9 verdaderos positivos. Dos campos alcanzaron el límite de salida del detector; elevarlo recuperó objetos y también aumentó falsos positivos. El límite permanece en 300 con aviso visible.
 
-## Aspectos que se inspeccionarán
+Las confusiones directas eritrocito → leucocito fueron 14 con el modelo operativo y 12 con el candidato; en sentido contrario, 1 y 2. El piloto perdió AP50–95 global y en las tres clases prioritarias, por lo que se conserva el modelo operativo.
 
-- Objetos pequeños perdidos por la resolución de 320 px.
-- Confusión entre eritrocitos y leucocitos.
-- Confusión entre células epiteliales y núcleos epiteliales.
-- Falsos positivos en fondos, bordes y artefactos.
-- Clases minoritarias con soporte o recall insuficiente.
-- Diferencias de dominio en UMID para las tres clases compartidas.
+## Próxima revisión
 
-## Resultados
+Examinar con especialistas los 99 campos reales seleccionados exclusivamente desde train, preservando imagen, XML, cajas, clase original y motivo. No tratarlos como errores confirmados ni cambiar automáticamente etiquetas por discrepancia con el detector.
 
-Con umbral 0.25 e IoU 0.50: 1,415 verdaderos positivos, 545 falsos positivos, 241 falsos negativos y 36 clasificaciones erróneas. Los falsos positivos son el principal volumen de error; `cast` (recall 0.497, mAP@50–95 0.284) y `epithn` (mAP@50–95 0.282) son las clases internas más débiles.
-
-UMID externo obtuvo recall 0.1199 y mAP@50–95 0.0348, una degradación mucho mayor que las variaciones internas. Esto apunta a diferencias de captura, escala, apariencia o política de anotación y no debe interpretarse como desempeño clínico generalizable.
-
-La evidencia completa y las predicciones renderizadas se conservaron como artefactos locales de investigación y se excluyeron del repositorio público por tamaño, privacidad y licencia. Los resultados consolidados permanecen documentados aquí y en `MODEL_CARD.md`.
+Las cifras completas y los límites del QA sintético están en el [informe experimental](MODEL_IMPROVEMENT_REPORT.md). Los resultados de TEST de versiones previas permanecen en el historial y no se reutilizan para ajustar el modelo.

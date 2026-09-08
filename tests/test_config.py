@@ -4,7 +4,17 @@ def test_default_settings_are_safe():
     assert 0 <= settings.confidence_threshold <= 1
     assert settings.local_model_imgsz == 448
     assert settings.local_model_augment is True
+    assert settings.local_model_max_detections == 300
     assert Settings.from_environment().inference_provider in {"mock", "local"}
+
+
+def test_detection_limit_configuration(monkeypatch):
+    from src.config import Settings
+    monkeypatch.setenv('LOCAL_MODEL_MAX_DETECTIONS', '600')
+    assert Settings.from_environment().local_model_max_detections == 600
+    monkeypatch.setenv('LOCAL_MODEL_MAX_DETECTIONS', '0')
+    with __import__('pytest').raises(ValueError, match='entero positivo'):
+        Settings.from_environment()
 
 
 def test_remote_provider_is_rejected(monkeypatch):

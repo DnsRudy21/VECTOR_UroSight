@@ -141,6 +141,6 @@ class StudyResult:
     def fields_by_class(self) -> dict[str, int]:
         result: dict[str, int] = {}
         for image in self.successful_images:
-            for name in {d.class_name for d in self.detections_for(image)}:
+            for name in {d.effective_class for d in self.reviewed_detections_for(image)}:
                 result[name] = result.get(name, 0) + 1
         return result

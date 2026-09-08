@@ -1,4 +1,6 @@
+from src.processing.class_normalizer import class_display_name
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 from PIL import Image as PILImage, ImageDraw, ImageFont
 from reportlab.lib import colors
@@ -51,8 +53,9 @@ def _table(data, widths, header=False) -> Table:
 
 def _field_counts(result: StudyResult, analysis: ImageAnalysis) -> str:
     counts: dict[str, int] = {}
-    for detection in result.detections_for(analysis): counts[detection.class_name] = counts.get(detection.class_name, 0) + 1
-    return ", ".join(f"{name.replace('_', ' ')}: {total}" for name, total in sorted(counts.items())) or "Sin detecciones aceptadas"
+    for detection in result.reviewed_detections_for(analysis):
+        counts[detection.effective_class] = counts.get(detection.effective_class, 0) + 1
+    return ", ".join(f"{class_display_name(name)}: {total}" for name, total in sorted(counts.items())) or "Sin detecciones aceptadas"
 
 
 def annotated_image(result: StudyResult, analysis: ImageAnalysis, output_path: Path, *, preview: bool = False) -> Path:
@@ -60,11 +63,11 @@ def annotated_image(result: StudyResult, analysis: ImageAnalysis, output_path: P
         rendered = source.convert("RGB"); draw = ImageDraw.Draw(rendered)
         font = ImageFont.load_default(size=max(14, rendered.width // 55))
         line_width = max(3, rendered.width // 250)
-        for detection in result.detections_for(analysis):
+        for detection in result.reviewed_detections_for(analysis):
             box = detection.bbox; bounds = (box.x-box.width/2, box.y-box.height/2, box.x+box.width/2, box.y+box.height/2)
-            color = CLASS_HEX.get(detection.class_name, "#377DCE")
+            color = CLASS_HEX.get(detection.effective_class, "#377DCE")
             draw.rectangle(bounds, outline=color, width=line_width)
-            label = f"{detection.class_name.replace('_', ' ')} {detection.confidence:.0%}"
+            label = f"{class_display_name(detection.effective_class)} {detection.confidence:.0%}"
             left, top, right, bottom = draw.textbbox((0,0), label, font=font)
             label_y = max(0, int(bounds[1])-(bottom-top)-8)
             draw.rectangle((bounds[0], label_y, bounds[0]+right-left+10, label_y+bottom-top+6), fill=color)
@@ -86,7 +89,7 @@ def _distribution_chart(counts: dict[str, int], width: float = 470, height: floa
     height = height or max(65, len(counts) * 19 + 12)
     drawing = Drawing(width, height); maximum = max(counts.values(), default=1); y = height - 20
     for name, total in sorted(counts.items(), key=lambda item: item[1], reverse=True):
-        label = name.replace("_", " ").title()[:23]; color = colors.HexColor(CLASS_HEX.get(name, "#169E91"))
+        label = class_display_name(name)[:23]; color = colors.HexColor(CLASS_HEX.get(name, "#169E91"))
         drawing.add(String(0, y, label, fontName="Helvetica", fontSize=8, fillColor=NAVY))
         drawing.add(Rect(120, y - 2, 285 * total / maximum, 10, rx=4, ry=4, fillColor=color, strokeColor=None))
         drawing.add(String(415, y, str(total), fontName="Helvetica-Bold", fontSize=8, fillColor=NAVY)); y -= 19
@@ -162,8 +165,8 @@ def generate_pdf(result: StudyResult, output_path: Path) -> Path:
     story += [kpi_table, Spacer(1, 12), Paragraph("Distribución de hallazgos", styles["Section"]), _distribution_chart(counts), Spacer(1, 5), Paragraph("Detalle estadístico", styles["Section"])]
     rows = [["Clase", "Total", "Promedio por campo", "Score medio", "Presencia"]]
     for name, total in sorted(counts.items()):
-        values = [d.confidence for image in result.successful_images for d in result.detections_for(image) if d.class_name == name]
-        rows.append([name.replace("_", " ").title(), str(total), f"{averages[name]:.2f}", f"{sum(values)/len(values):.1%}", f"{result.fields_by_class()[name]}/{len(result.successful_images)}"])
+        values = [d.confidence for image in result.successful_images for d in result.reviewed_detections_for(image) if d.effective_class == name]
+        rows.append([class_display_name(name), str(total), f"{averages[name]:.2f}", f"{sum(values)/len(values):.1%}", f"{result.fields_by_class()[name]}/{len(result.successful_images)}"])
     if len(rows) == 1: rows.append(["Sin detecciones", "0", "0.00", "-", "0"])
     story += [_table(rows, [4.8*cm, 2*cm, 3.8*cm, 3.2*cm, 3.2*cm], True), Spacer(1, 9),
               Paragraph(f"Score promedio del modelo: <b>{result.average_confidence():.1%}</b> &nbsp;&nbsp; Detecciones ocultas por umbral: <b>{result.hidden_count()}</b> &nbsp;&nbsp; Requieren revisión: <b>{result.review_count()}</b>", styles["BodyText"]),
@@ -174,6 +177,10 @@ def generate_pdf(result: StudyResult, output_path: Path) -> Path:
     story += [Paragraph(f"Auditoría: predicciones originales <b>{original_total}</b> · aceptadas tras revisión <b>{accepted_review}</b> · rechazadas <b>{reviews.get('incorrecta', 0)}</b> · correcciones humanas <b>{reviews.get('clase_equivocada', 0)}</b> · elementos omitidos <b>{reviews.get('elemento_omitido', 0)}</b>", styles["BodyText"]),
               Spacer(1, 8), PageBreak(), Paragraph("Interpretación orientativa", styles["Section"])]
     for message in interpret_study(result): story += [Paragraph(message, styles["BodyText"]), Spacer(1, 4)]
+    for image in result.successful_images:
+        if image.warnings:
+            notice = escape(image.image_path.name) + ": " + escape("; ".join(image.warnings))
+            story += [Paragraph(notice, styles["Notice"]), Spacer(1, 4)]
     story += [Spacer(1, 6), Paragraph("Limitación: los conteos representan detecciones por imagen cargada. No equivalen automáticamente a valores clínicos por campo microscópico sin controlar aumento, preparación, área y protocolo. Los indicadores de calidad son heurísticas técnicas, no una evaluación clínica.", styles["Notice"])]
 
     selected = list(result.successful_images)

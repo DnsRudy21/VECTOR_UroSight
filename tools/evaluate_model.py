@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -79,6 +80,10 @@ def main() -> int:
     metrics = model.val(**kwargs)
     summary, per_class = metrics_payload(metrics, model.names, split=args.split,
                                          confidence=args.confidence, augment=args.augment)
+    summary.update(model_path=str(args.model.resolve()),
+                   model_sha256=hashlib.sha256(args.model.read_bytes()).hexdigest(),
+                   data_yaml=str(args.data.resolve()), imgsz=args.imgsz, batch=args.batch,
+                   precision_recall_operating_point="Ultralytics smoothed max-F1 point; not fixed input confidence")
     write_evaluation(args.output, summary, per_class)
     print(json.dumps(summary, indent=2, ensure_ascii=False))
     return 0
