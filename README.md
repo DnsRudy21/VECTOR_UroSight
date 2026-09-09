@@ -113,14 +113,6 @@ Inicie de nuevo con `.\.venv\Scripts\python.exe -m src.main`. Los pesos no se de
 
 Los datasets, manifiestos privados, pesos y resultados completos se conservan localmente fuera de Git. Consulte la [guía de reentrenamiento](docs/RETRAINING.md) para reutilizarlos sin contaminar validación o test.
 
-## Publicar en GitHub
-
-Tras instalar las dependencias de desarrollo y configurar su acceso a GitHub, abra **`publish.cmd`** con doble clic. Comprueba el contenido publicable, el historial y las pruebas; después crea el commit y envía los cambios al repositorio configurado. Se detiene ante errores o divergencia con el remoto y nunca fuerza la subida.
-
-Para comprobar sin publicar: `powershell -File scripts/publish.ps1 -CheckOnly`.
-
-[Preparación, seguridad y solución de problemas](docs/PUBLISHING.md)
-
 ## Autoría y licencia
 
 Proyecto concebido y dirigido por **Ing. José Carlos Malacara Espinosa**, con colaboración técnica de **Cómplices Sistemas** y agradecimiento a la **Universidad Tecnológica de Coahuila**.
