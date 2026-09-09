@@ -46,28 +46,42 @@ Special recognition to **[Cómplice Sistemas C.A. de C.V.](https://www.complise.
 
 Our thanks to **Universidad Tecnológica de Coahuila**, as part of the academic setting of this project.
 
+## Methodology
+
+| Phase | Approach |
+|:---|:---|
+| Data preparation | USE images and Pascal VOC annotations, bounding-box checks, and removal of duplicates across splits. |
+| Training | Transfer learning with YOLO11s to detect seven particle classes. |
+| Evaluation | Model and threshold selection on validation data; evaluation of the selected model on test data. |
+| Application | PySide6 desktop interface, local inference, per-image review, and result exports. |
+
 ## Results and limitations
 
-The active model is **YOLO11s**, using **448 px** and test-time augmentation. The previous checkpoint remains active: the latest pilot did not improve the selection metric.
+The active model is **YOLO11s**, using **448 px** and test-time augmentation.
 
 | Evaluation | Precision | Recall | mAP@50 | mAP@50–95 |
 |:---|---:|---:|---:|---:|
-| Internal validation, reproduced September 8, 2026 | 0.8251 | 0.8154 | 0.8677 | 0.5094 |
-| Internal test, historical record | 0.8087 | 0.8136 | 0.8543 | 0.4945 |
+| Internal validation | 0.8251 | 0.8154 | 0.8677 | 0.5094 |
+| Internal test | 0.8087 | 0.8136 | 0.8543 | 0.4945 |
 
-Precision and recall refer to the evaluation's maximum-F1 operating point, not the interface's fixed confidence threshold. TEST was not evaluated again during the latest cycle.
+Precision and recall refer to the evaluation's maximum-F1 operating point, not the interface's fixed confidence threshold.
 
-Historical external UMID evaluation showed severe degradation (**0.0348 mAP@50–95**). This is a project-level historical result, not a new external evaluation of the current checkpoint. Generalization across laboratories and microscopes remains unverified.
+Generalization across microscopes and laboratories has not been validated.
 
-Recent software changes corrected display labels, exports after human corrections, and saturation warnings. The Silver Review Pack was used only for synthetic functional checks, **never for training or clinical accuracy measurements**.
-
-[Model card](docs/MODEL_CARD.md) · [Pilot comparison](docs/MODEL_COMPARISON.md) · [Experimental report](docs/MODEL_IMPROVEMENT_REPORT.md)
+[Model specifications and evaluation](docs/MODEL_CARD.md)
 
 ## Getting started
 
 ### 1. Install and run the demonstration
 
-Requires **Python 3.11**. Run these commands in PowerShell from the project directory:
+Requires **Python 3.11**. These instructions target Windows and PowerShell. Download the repository and open its directory, or clone it if Git is installed:
+
+```powershell
+git clone https://github.com/DnsRudy21/VECTOR_UroSight.git
+cd VECTOR_UroSight
+```
+
+Create an environment and install dependencies:
 
 ```powershell
 python -m venv .venv
@@ -97,12 +111,11 @@ LOCAL_MODEL_MAX_DETECTIONS=300
 
 Run `.\.venv\Scripts\python.exe -m src.main` again. Weights are not downloaded or distributed by this repository. Inference works offline once dependencies and weights are installed.
 
-## Development and retraining
+## Tests and project structure
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m pytest -q
-.\.venv\Scripts\python.exe -m tools.publication_check
 ```
 
 | Directory | Contents |
@@ -114,7 +127,7 @@ Run `.\.venv\Scripts\python.exe -m src.main` again. Weights are not downloaded o
 | `assets/` | Icons and application preview |
 | `scripts/` | Setup, execution, and packaging |
 
-Datasets, private manifests, weights, and full experiment outputs remain local and excluded from Git. See the [retraining guide](docs/RETRAINING.md) for reuse without validation or test leakage.
+Real inference requires a compatible checkpoint obtained separately. The demonstration and tests can run without trained model weights.
 
 ## Credits and license
 

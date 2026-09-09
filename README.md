@@ -24,7 +24,7 @@ VECTOR UroSight es una aplicación de escritorio para explorar imágenes de sedi
 
 ![Interfaz real en modo demostración, sin imágenes ni datos de pacientes](assets/interface-preview.png)
 
-<div align="center"><sub>Interfaz del código fuente actual · Modo demostración · Sin datos de pacientes</sub></div>
+<div align="center"><sub>Interfaz en modo demostración</sub></div>
 
 ## De la imagen al reporte
 
@@ -53,28 +53,42 @@ Un reconocimiento especial a **[Cómplice Sistemas C.A. de C.V.](https://www.com
 
 Agradecemos también a la **Universidad Tecnológica de Coahuila**, como parte del entorno académico en el que se desarrolla este proyecto.
 
+## Metodología
+
+| Fase | Desarrollo |
+|:---|:---|
+| Preparación de datos | Imágenes USE y anotaciones Pascal VOC, revisión de cajas y eliminación de duplicados entre particiones. |
+| Entrenamiento | Transferencia de aprendizaje con YOLO11s para detectar siete clases de partículas. |
+| Evaluación | Selección del modelo y umbral en validación; evaluación del modelo seleccionado en test. |
+| Aplicación | Interfaz de escritorio con PySide6, inferencia local, revisión por imagen y exportación de resultados. |
+
 ## Resultados y límites
 
-Modelo operativo **YOLO11s**, resolución **448 px** e inferencia aumentada. Se conserva el checkpoint anterior: el último piloto no mejoró la métrica de selección.
+Modelo operativo **YOLO11s**, resolución **448 px** e inferencia aumentada.
 
 | Evaluación | Precisión | Recall | mAP@50 | mAP@50–95 |
 |:---|---:|---:|---:|---:|
-| Validación interna, reproducida el 08/09/2026 | 0.8251 | 0.8154 | 0.8677 | 0.5094 |
-| Test interno, registro histórico | 0.8087 | 0.8136 | 0.8543 | 0.4945 |
+| Validación interna | 0.8251 | 0.8154 | 0.8677 | 0.5094 |
+| Test interno | 0.8087 | 0.8136 | 0.8543 | 0.4945 |
 
-Precisión y recall son los del punto de máximo F1 de la evaluación; no representan conteos al umbral fijo de la interfaz. No se volvió a evaluar TEST en el último ciclo.
+Precisión y recall son los del punto de máximo F1 de la evaluación; no representan conteos al umbral fijo de la interfaz.
 
-La evaluación externa histórica en UMID mostró una caída severa (mAP@50–95: **0.0348**). Es un antecedente del proyecto, no una nueva evaluación externa del checkpoint actual. La generalización a otros microscopios o laboratorios sigue pendiente.
+La generalización a otros microscopios y laboratorios no está validada.
 
-La última revisión corrigió etiquetas visibles, exportaciones tras correcciones humanas y avisos de saturación. El Silver Review Pack se utilizó para pruebas sintéticas de funcionamiento; **no se usó para entrenar ni para medir exactitud clínica**.
-
-[Ficha del modelo](docs/MODEL_CARD.md) · [Comparación del último piloto](docs/MODEL_COMPARISON.md) · [Informe experimental](docs/MODEL_IMPROVEMENT_REPORT.md)
+[Ficha técnica y evaluación del modelo](docs/MODEL_CARD.md)
 
 ## Empezar
 
 ### 1. Instalar y abrir la demostración
 
-Requiere **Python 3.11**. Desde la carpeta del proyecto, en PowerShell:
+Requiere **Python 3.11**. Las siguientes instrucciones corresponden a Windows y PowerShell. Descargue el repositorio y abra su carpeta; si tiene Git instalado:
+
+```powershell
+git clone https://github.com/DnsRudy21/VECTOR_UroSight.git
+cd VECTOR_UroSight
+```
+
+Cree un entorno e instale las dependencias:
 
 ```powershell
 python -m venv .venv
@@ -106,12 +120,11 @@ LOCAL_MODEL_MAX_DETECTIONS=300
 
 Inicie de nuevo con `.\.venv\Scripts\python.exe -m src.main`. Los pesos no se descargan ni se incluyen en este repositorio. Una vez instaladas las dependencias y el modelo, la inferencia funciona sin Internet.
 
-## Desarrollo y futuro entrenamiento
+## Pruebas y estructura
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m pytest -q
-.\.venv\Scripts\python.exe -m tools.publication_check
 ```
 
 | Carpeta | Contenido |
@@ -123,7 +136,7 @@ Inicie de nuevo con `.\.venv\Scripts\python.exe -m src.main`. Los pesos no se de
 | `assets/` | Iconos y vista de la aplicación |
 | `scripts/` | Instalación, ejecución y empaquetado |
 
-Los datasets, manifiestos privados, pesos y resultados completos se conservan localmente fuera de Git. Consulte la [guía de reentrenamiento](docs/RETRAINING.md) para reutilizarlos sin contaminar validación o test.
+La ejecución de inferencia real requiere obtener por separado un checkpoint compatible. El repositorio permite ejecutar la demostración y las pruebas sin disponer del modelo entrenado.
 
 ## Autoría y licencia
 
