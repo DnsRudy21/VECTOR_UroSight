@@ -5,8 +5,8 @@ from pathlib import Path
 
 REQUIRED_DOCS = (
     "README.md", "README.en.md", "LICENSE", "COPYRIGHT", "SECURITY.md", "THIRD_PARTY_NOTICES.md", ".env.example",
-    "docs/PUBLISHING.md", "docs/RETRAINING.md",
-    "docs/PROJECT_STATUS.md", "docs/DECISIONS.md",
+    "docs/USER_GUIDE.md", "docs/RETRAINING.md",
+    "docs/DECISIONS.md",
     "docs/MODEL_CARD.md", "docs/CLASS_ONTOLOGY.md", "docs/ERROR_ANALYSIS.md", "docs/MODEL_COMPARISON.md",
 )
 FORBIDDEN_ROOTS = (".env", "artifacts", "build", "data_processed", "dist", "legacy", "models", "output", "runs", "tmp")

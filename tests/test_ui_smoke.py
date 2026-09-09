@@ -17,10 +17,10 @@ def test_main_window_starts(qtbot):
     window._toggle_theme()
     assert window._theme == "dark"
     assert window._theme_switch._dark
-    assert window._export_button.text() == "Exportar ▾"
-    assert [action.text() for action in window._export_button.menu().actions()] == [
-        "Reporte clínico PDF", "Imágenes anotadas", "Estadísticas CSV"
-    ]
+    assert window._export_button.text() == "Exportar resultados"
+    assert window._export_button.menu() is None
+    assert window._add_files_button.menu() is None
+    assert window._add_folder_button.menu() is None
     assert window.minimumWidth() >= 1120
 
 

@@ -3,11 +3,11 @@ from src.processing.aggregator import KNOWN_CLASSES
 from pathlib import Path
 import tempfile
 
-from PySide6.QtCore import QSize, Qt, QThread, Signal
+from PySide6.QtCore import QSize, Qt, QThread, Signal, QEvent
 from PySide6.QtGui import QColor, QDragEnterEvent, QDropEvent, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QLineEdit,
     QDialog, QFormLayout, QFrame, QGraphicsPixmapItem, QGraphicsScene, QGraphicsView, QGridLayout, QHBoxLayout, QHeaderView, QLabel, QListWidget, QListWidgetItem,
-    QMainWindow, QMenu, QMessageBox, QProgressBar, QPushButton, QSplitter, QStatusBar,
+    QMainWindow, QMessageBox, QProgressBar, QPushButton, QSplitter, QStatusBar,
     QTableWidget, QTableWidgetItem, QTextEdit, QVBoxLayout, QWidget)
 
 from src.domain.models import ImageAnalysis, StudyResult, generate_patient_id
@@ -152,6 +152,9 @@ class MainWindow(QMainWindow):
         self._theme = "light"
         self.setStyleSheet(stylesheet(self._theme))
         self._build_ui()
+        for widget in self.findChildren(QWidget):
+            widget.setAcceptDrops(True)
+            widget.installEventFilter(self)
 
     def _build_ui(self) -> None:
         root = QWidget(); layout = QVBoxLayout(root); layout.setContentsMargins(0, 0, 0, 0); layout.setSpacing(0)
@@ -166,7 +169,12 @@ class MainWindow(QMainWindow):
         self._stage = QLabel("1 · Añada los campos", objectName="stage"); side.addWidget(self._stage)
         self._patient_name = QLineEdit(); self._patient_name.setPlaceholderText("Paciente (opcional)"); self._patient_name.setClearButtonEnabled(True); side.addWidget(self._patient_name)
         self._patient_id = QLabel(self._patient_id_value, objectName="muted"); self._patient_id.setToolTip("Identificador aleatorio; no contiene datos del paciente."); self._patient_id.hide(); self._folio = QLabel("NUEVO ESTUDIO", objectName="muted"); self._folio.hide()
-        add_fields = QPushButton("＋  Añadir campos"); add_menu = QMenu(add_fields); add_menu.addAction("Seleccionar imágenes", self._select_images); add_menu.addAction("Seleccionar carpeta", self._select_folder); add_fields.setMenu(add_menu); side.addWidget(add_fields)
+        self._add_files_button = QPushButton("Seleccionar archivos")
+        self._add_files_button.clicked.connect(self._select_images)
+        side.addWidget(self._add_files_button)
+        self._add_folder_button = QPushButton("Seleccionar carpeta")
+        self._add_folder_button.clicked.connect(self._select_folder)
+        side.addWidget(self._add_folder_button)
         self._files = QListWidget(); self._files.setIconSize(QSize(74, 54)); self._files.currentRowChanged.connect(self._select_analysis); side.addWidget(self._files)
         self._file_hint = QLabel("Arrastre aquí imágenes o una carpeta", objectName="muted"); self._file_hint.setAlignment(Qt.AlignCenter); self._file_hint.setWordWrap(True); side.addWidget(self._file_hint)
         self._analyze_button = QPushButton("Analizar estudio", objectName="primary"); self._analyze_button.setToolTip("Procesa todos los campos con el modelo local."); self._analyze_button.clicked.connect(self._analyze); self._analyze_button.setEnabled(False); side.addWidget(self._analyze_button)
@@ -196,8 +204,9 @@ class MainWindow(QMainWindow):
         self._summary = QTableWidget(0, 3); self._summary.setHorizontalHeaderLabels(["Clase", "Total", "Prom./campo"]); self._summary.hide()
         results_layout.addWidget(QLabel("Interpretación orientativa", objectName="section")); self._interpretation = QTextEdit(); self._interpretation.setReadOnly(True); self._interpretation.setPlaceholderText("La interpretación aparecerá al terminar el análisis."); results_layout.addWidget(self._interpretation, 1)
         warning = QLabel("USO ACADÉMICO · Confirme visualmente cada hallazgo. No sustituye el criterio profesional."); warning.setObjectName("warning"); warning.setWordWrap(True); results_layout.addWidget(warning)
-        self._export_button = QPushButton("Exportar ▾", objectName="primary"); self._export_button.setEnabled(False)
-        export_menu = QMenu(self._export_button); export_menu.addAction("Reporte clínico PDF", self._export_pdf); export_menu.addAction("Imágenes anotadas", self._export_images); export_menu.addAction("Estadísticas CSV", self._export_csv); self._export_button.setMenu(export_menu); results_layout.addWidget(self._export_button); splitter.addWidget(results)
+        self._export_button = QPushButton("Exportar resultados", objectName="primary"); self._export_button.setEnabled(False)
+        self._export_button.clicked.connect(self._show_export_options)
+        results_layout.addWidget(self._export_button); splitter.addWidget(results)
         splitter.setSizes([235, 850, 355]); layout.addWidget(splitter, 1)
         self._progress = QProgressBar(); self._progress.hide(); layout.addWidget(self._progress)
         self.setStatusBar(QStatusBar()); self.statusBar().showMessage("Seleccione imágenes para comenzar.")
@@ -227,20 +236,82 @@ class MainWindow(QMainWindow):
     def _card(layout: QGridLayout, title: str, row: int, col: int) -> QLabel:
         frame = QFrame(); frame.setProperty("card", "true"); box = QVBoxLayout(frame); box.addWidget(QLabel(title, objectName="muted")); value = QLabel("—"); value.setStyleSheet("font-size:20px;font-weight:700;"); box.addWidget(value); layout.addWidget(frame, row, col); return value
 
+    def _is_analyzing(self) -> bool:
+        return bool(self._thread and self._thread.isRunning())
+
+    def _can_drop(self, mime) -> bool:
+        return not self._is_analyzing() and any(
+            url.isLocalFile() and (Path(url.toLocalFile()).is_dir() or
+            Path(url.toLocalFile()).suffix.lower() in self._service.SUPPORTED_EXTENSIONS)
+            for url in mime.urls())
+
+    def eventFilter(self, watched, event):
+        if event.type() in (QEvent.DragEnter, QEvent.DragMove, QEvent.Drop) and event.mimeData().hasUrls():
+            if self._can_drop(event.mimeData()):
+                if event.type() == QEvent.Drop:
+                    self.dropEvent(event)
+                else:
+                    event.acceptProposedAction()
+            else:
+                event.ignore()
+            return True
+        return super().eventFilter(watched, event)
+
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
-        if event.mimeData().hasUrls(): event.acceptProposedAction()
+        if self._can_drop(event.mimeData()):
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event) -> None:
+        self.dragEnterEvent(event)
 
     def dropEvent(self, event: QDropEvent) -> None:
+        if not self._can_drop(event.mimeData()):
+            event.ignore()
+            return
         paths: list[Path] = []
         for url in event.mimeData().urls():
-            path = Path(url.toLocalFile()); paths.extend(self._service.collect_folder(path) if path.is_dir() else [path])
-        self._set_paths(paths, "Arrastrar y soltar")
+            if not url.isLocalFile():
+                continue
+            path = Path(url.toLocalFile()).resolve()
+            paths.extend(self._service.collect_folder(path) if path.is_dir() else [path])
+        if paths:
+            self._set_paths(paths, "Arrastrar y soltar")
+        else:
+            self.statusBar().showMessage("La carpeta no contiene imágenes compatibles.")
+        event.acceptProposedAction()
+
+    def _show_export_options(self) -> None:
+        if not self._result:
+            return
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Exportar resultados")
+        dialog.setMinimumWidth(380)
+        layout = QVBoxLayout(dialog)
+        layout.setSpacing(12)
+        layout.addWidget(QLabel("Elija qué desea guardar", objectName="section"))
+        for title, description, callback in (
+            ("Guardar reporte PDF", "Resumen del estudio y evidencia visual.", self._export_pdf),
+            ("Guardar imágenes anotadas", "Imágenes con las detecciones revisadas.", self._export_images),
+            ("Guardar estadísticas CSV", "Conteos para consultar en una hoja de cálculo.", self._export_csv),
+        ):
+            button = QPushButton(title)
+            button.clicked.connect(lambda checked=False, action=callback: (dialog.accept(), action()))
+            layout.addWidget(button)
+            layout.addWidget(QLabel(description, objectName="muted"))
+        cancel = QPushButton("Cancelar")
+        cancel.clicked.connect(dialog.reject)
+        layout.addWidget(cancel)
+        dialog.exec()
 
     def _select_images(self) -> None:
+        if self._is_analyzing(): return
         names, _ = QFileDialog.getOpenFileNames(self, "Seleccionar imágenes", "", "Imágenes (*.jpg *.jpeg *.png *.bmp *.tif *.tiff)")
         if names: self._set_paths([Path(name) for name in names], "Selección de archivos")
 
     def _select_folder(self) -> None:
+        if self._is_analyzing(): return
         folder = QFileDialog.getExistingDirectory(self, "Seleccionar carpeta")
         if folder:
             paths = self._service.collect_folder(Path(folder))
@@ -248,6 +319,7 @@ class MainWindow(QMainWindow):
             else: self._set_paths(paths, folder)
 
     def _set_paths(self, paths: list[Path], source: str) -> None:
+        if self._is_analyzing(): return
         accepted, rejected = [], []
         for path in dict.fromkeys(paths):
             valid, reason = self._service.validate_image(path)
@@ -275,6 +347,8 @@ class MainWindow(QMainWindow):
         self._thread = QThread(self); self._worker = AnalysisWorker(self._service, analysis_paths, source); self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run); self._worker.progress.connect(self._on_progress); self._worker.completed.connect(self._on_completed); self._worker.failed.connect(lambda message: QMessageBox.critical(self, "Error de análisis", message)); self._worker.finished.connect(self._finish_worker); self._worker.finished.connect(self._thread.quit)
         self._thread.finished.connect(self._thread_finished)
+        self._add_files_button.setEnabled(False); self._add_folder_button.setEnabled(False)
+        self._export_button.setEnabled(False)
         self._analyze_button.setEnabled(False); self._cancel_button.show(); self._progress.setRange(0, len(self._selected_paths)); self._progress.setValue(0); self._progress.show(); self._thread.start()
         self._set_stage(2, "Analizando campos")
 
@@ -288,6 +362,8 @@ class MainWindow(QMainWindow):
         self._analyze_button.setEnabled(True); self._cancel_button.hide()
 
     def _thread_finished(self) -> None:
+        self._add_files_button.setEnabled(True); self._add_folder_button.setEnabled(True)
+        self._export_button.setEnabled(self._result is not None)
         if self._close_when_finished:
             self._close_when_finished = False
             self.close()

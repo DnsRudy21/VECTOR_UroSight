@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_ROOTS = {"src", "tests", "tools", "scripts", "docs", "assets", ".github"}
 ALLOWED_FILES = {".env.example", ".gitignore", ".gitattributes", "README.md", "README.en.md",
                  "LICENSE", "COPYRIGHT", "CITATION.cff", "CODE_OF_CONDUCT.md", "CONTRIBUTING.md",
-                 "SECURITY.md", "THIRD_PARTY_NOTICES.md", "pyproject.toml", "publish.cmd"}
+                 "SECURITY.md", "THIRD_PARTY_NOTICES.md", "pyproject.toml"}
 SUFFIXES = {".py", ".md", ".txt", ".toml", ".yml", ".yaml", ".ps1", ".bat", ".cmd", ".svg", ".png", ".ico", ".cff"}
 PATTERNS = {
     "private-key": re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----"),

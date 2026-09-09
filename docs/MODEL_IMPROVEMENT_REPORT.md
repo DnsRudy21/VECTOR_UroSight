@@ -67,7 +67,7 @@ En dos campos saturados se probó max_det=600. En nh03266 (513 etiquetas), TP/FP
 ## Modelo baseline
 
  `models/vector_urosight/best.pt` (ruta de instalación; el checkpoint operativo se conserva también en el portable local).
-SHA-256: `c5fba1aeccb60ca8eac49c1750123a5dc85f22456f02f805f62fff6386669530`. Se corrigió el hash y la configuración obsoletos de MODEL_CARD.md; PROJECT_STATUS.md ya registraba el hash correcto.
+SHA-256: `c5fba1aeccb60ca8eac49c1750123a5dc85f22456f02f805f62fff6386669530`. Se corrigió el hash y la configuración obsoletos de MODEL_CARD.md; el registro histórico de entrenamiento ya registraba el hash correcto.
 
 
 ## Modelo candidato
@@ -106,7 +106,7 @@ Las confusiones directas eryth→leuko pasan de 14 a 12, y leuko→eryth de 1 a 
 
 ## Resultado sobre TEST
 
- No ejecutado en este ciclo: el candidato fue rechazado en validation antes de ser candidato final. No se seleccionaron umbrales ni hiperparámetros con TEST. Como antecedente, PROJECT_STATUS.md documenta para el baseline P=0.808721, R=0.813571, mAP50=0.854268, mAP50–95=0.494546; son resultados históricos, no mediciones nuevas. No se generó una nueva matriz de TEST.
+ No ejecutado en este ciclo: el candidato fue rechazado en validation antes de ser candidato final. No se seleccionaron umbrales ni hiperparámetros con TEST. Como antecedente, el registro histórico de entrenamiento documenta para el baseline P=0.808721, R=0.813571, mAP50=0.854268, mAP50–95=0.494546; son resultados históricos, no mediciones nuevas. No se generó una nueva matriz de TEST.
 
 
 ## QA sobre Silver Review Pack

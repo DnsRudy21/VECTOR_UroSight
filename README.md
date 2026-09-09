@@ -13,7 +13,7 @@
 
 **[Español](README.md) · [English](README.en.md)**
 
-[Modelo y resultados](docs/MODEL_CARD.md) · [Desarrollo](CONTRIBUTING.md) · [Publicar en GitHub](docs/PUBLISHING.md)
+[Modelo y resultados](docs/MODEL_CARD.md) · [Guía de uso](docs/USER_GUIDE.md) · [Desarrollo](CONTRIBUTING.md)
 
 </div>
 
@@ -42,6 +42,16 @@ flowchart LR
 | Siete clases de partículas | Avisos de calidad y límite de detecciones | Resultados consolidados por estudio |
 
 **Clases:** eritrocitos · leucocitos · células epiteliales · núcleos epiteliales · cilindros · cristales · levaduras/hongos.
+
+## Agradecimientos
+
+### Cómplice Sistemas C.A. de C.V.
+
+Un reconocimiento especial a **[Cómplice Sistemas C.A. de C.V.](https://www.complise.mx/)** por su colaboración técnica en este proyecto y, de manera destacada, a su director general, **Ing. Alejandro Leal Cueva**.
+
+### Universidad Tecnológica de Coahuila
+
+Agradecemos también a la **Universidad Tecnológica de Coahuila**, como parte del entorno académico en el que se desarrolla este proyecto.
 
 ## Resultados y límites
 
@@ -109,22 +119,14 @@ Inicie de nuevo con `.\.venv\Scripts\python.exe -m src.main`. Los pesos no se de
 | `src/` | Aplicación, inferencia, revisión y exportación |
 | `tests/` | Pruebas de dominio, interfaz y reportes |
 | `tools/` | Auditoría de datos, evaluación y entrenamiento |
-| `docs/` | Arquitectura, modelo, experimentos y publicación |
+| `docs/` | Guía de uso, arquitectura, modelo y experimentos |
 | `assets/` | Iconos y vista de la aplicación |
-| `scripts/` | Instalación, ejecución, empaquetado y publicación |
+| `scripts/` | Instalación, ejecución y empaquetado |
 
 Los datasets, manifiestos privados, pesos y resultados completos se conservan localmente fuera de Git. Consulte la [guía de reentrenamiento](docs/RETRAINING.md) para reutilizarlos sin contaminar validación o test.
 
-## Publicar en GitHub
-
-Tras instalar las dependencias de desarrollo y configurar su acceso a GitHub, abra **`publish.cmd`** con doble clic. Comprueba el contenido publicable, el historial y las pruebas; después crea el commit y envía los cambios al repositorio configurado. Se detiene ante errores o divergencia con el remoto y nunca fuerza la subida.
-
-Para comprobar sin publicar: `powershell -File scripts/publish.ps1 -CheckOnly`.
-
-[Preparación, seguridad y solución de problemas](docs/PUBLISHING.md)
-
 ## Autoría y licencia
 
-Proyecto concebido y dirigido por **Ing. José Carlos Malacara Espinosa**, con colaboración técnica de **Cómplices Sistemas** y agradecimiento a la **Universidad Tecnológica de Coahuila**.
+Proyecto concebido y dirigido por **Ing. José Carlos Malacara Espinosa**.
 
 Código bajo [GNU AGPL-3.0-only](LICENSE). Se conservan las licencias y atribuciones de terceros. La publicación incluye el código fuente; no incluye datasets, imágenes de pacientes, pesos ni ejecutables. Consulte [avisos de terceros](THIRD_PARTY_NOTICES.md) y [seguridad](SECURITY.md).

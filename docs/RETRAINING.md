@@ -2,23 +2,6 @@
 
 El modelo vigente se identifica en [MODEL_CARD.md](MODEL_CARD.md). Su reemplazo exige mejorar la validación real con el mismo método y revisar las clases prioritarias. Los 99 campos seleccionados son candidatos de revisión, no una garantía de mejora.
 
-## Material local que se conserva
-
-| Ubicación local, excluida de Git | Utilidad |
-|:---|:---|
-| Fuente original USE, fuera del repositorio | Imágenes y XML originales; nunca editar directamente |
-| `data_processed/silver_real_baseline/` | Derivado deduplicado con etiquetas y splits reproducibles |
-| `data_processed/hard_cases_real/` | 99 campos de train, XML, etiquetas y manifiesto de selección |
-| `artifacts/silver_real_audit/` | Hashes, problemas de anotación y separación de datos |
-| `artifacts/run_baseline/` y `artifacts/run_candidate/` | Evaluaciones comparables |
-| `artifacts/targeted_pilot_balanced/` | Protocolo, exposición de objetos, métricas y mejor checkpoint rechazado |
-| `artifacts/validation_short_term/` | Predicciones por transformación y resultados por umbral |
-| Resto de `artifacts/` | QA sintético, mediciones y evidencia de regresión |
-
-Se conserva `best.pt` del candidato para reproducir su evaluación, aunque no esté aprobado para uso. `last.pt` del mismo piloto no es necesario para comparar el checkpoint seleccionado y se retira al archivo local excluido de Git. Las exportaciones de prueba retiradas y la documentación sustituida están en `local_archive/2026-09-08/`, excluido de Git. Las cachés Python/pytest/YOLO también quedan excluidas y pueden regenerarse.
-
-Los nombres locales existentes se mantienen porque manifiestos y protocolos referencian esas rutas. Moverlos exige actualizar referencias y verificar hashes. Copie este material a un respaldo privado si cambia de equipo; clonar GitHub no lo recuperará.
-
 ## Preparación
 
 Instale Python 3.11 y `requirements-local.txt` más `requirements-audit.txt`. Obtenga cada dataset desde una fuente autorizada y conserve su licencia, versión y procedencia. El repositorio no concede permiso para redistribuir USE, UMID ni sus derivados.

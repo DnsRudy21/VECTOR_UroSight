@@ -20,7 +20,7 @@ El hash histórico tampoco coincide. No atribuir automáticamente las métricas
 históricas a estos pesos. `epoch=-1` corresponde al checkpoint distribuido;
 no permite confirmar por sí solo la época seleccionada.
 
-La inconsistencia de hash estaba en MODEL_CARD.md: PROJECT_STATUS.md sí registraba
+La inconsistencia de hash estaba en MODEL_CARD.md: el registro histórico de entrenamiento sí registraba
 el hash observado y la selección histórica en época 13 de 15. Se corrigió la ficha.
 
 La evaluación nueva de validation sí reproduce exactamente las métricas de validation

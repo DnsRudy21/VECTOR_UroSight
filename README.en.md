@@ -13,7 +13,7 @@
 
 **[Español](README.md) · [English](README.en.md)**
 
-[Model and results](docs/MODEL_CARD.md) · [Contributing](CONTRIBUTING.md) · [Publishing](docs/PUBLISHING.md)
+[Model and results](docs/MODEL_CARD.md) · [User guide](docs/USER_GUIDE.md) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -35,6 +35,16 @@ VECTOR UroSight is a desktop application for examining urinary sediment images, 
 | Seven particle classes | Quality and detection-limit warnings | Consolidated study results |
 
 **Classes:** erythrocytes, leukocytes, epithelial cells, epithelial nuclei, casts, crystals, and yeast/fungi.
+
+## Acknowledgments
+
+### Cómplice Sistemas C.A. de C.V.
+
+Special recognition to **[Cómplice Sistemas C.A. de C.V.](https://www.complise.mx/)** for its technical collaboration on this project, and especially to its General Director, **Eng. Alejandro Leal Cueva**.
+
+### Universidad Tecnológica de Coahuila
+
+Our thanks to **Universidad Tecnológica de Coahuila**, as part of the academic setting of this project.
 
 ## Results and limitations
 
@@ -100,22 +110,14 @@ Run `.\.venv\Scripts\python.exe -m src.main` again. Weights are not downloaded o
 | `src/` | Application, inference, review, and exports |
 | `tests/` | Domain, UI, and report tests |
 | `tools/` | Data audits, evaluation, and training |
-| `docs/` | Architecture, model, experiments, and publishing |
+| `docs/` | User guide, architecture, model, and experiments |
 | `assets/` | Icons and application preview |
-| `scripts/` | Setup, execution, packaging, and publishing |
+| `scripts/` | Setup, execution, and packaging |
 
 Datasets, private manifests, weights, and full experiment outputs remain local and excluded from Git. See the [retraining guide](docs/RETRAINING.md) for reuse without validation or test leakage.
 
-## Publish to GitHub
-
-After installing development dependencies and configuring GitHub authentication, double-click **`publish.cmd`**. It checks publishable files, history, and tests, creates a commit, and pushes to the configured repository. Errors and remote divergence stop publication; it never force-pushes.
-
-Check without publishing: `powershell -File scripts/publish.ps1 -CheckOnly`.
-
-[Setup, security, and troubleshooting](docs/PUBLISHING.md)
-
 ## Credits and license
 
-Conceived and directed by **Eng. José Carlos Malacara Espinosa**, with technical collaboration from **Cómplices Sistemas** and thanks to **Universidad Tecnológica de Coahuila**.
+Conceived and directed by **Eng. José Carlos Malacara Espinosa**.
 
 Source code is licensed under [GNU AGPL-3.0-only](LICENSE). Third-party licenses and attributions remain applicable. This repository excludes datasets, patient images, weights, and executables. See [third-party notices](THIRD_PARTY_NOTICES.md) and [security](SECURITY.md).
