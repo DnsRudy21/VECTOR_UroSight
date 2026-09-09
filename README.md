@@ -115,6 +115,6 @@ Los datasets, manifiestos privados, pesos y resultados completos se conservan lo
 
 ## Autoría y licencia
 
-Proyecto concebido y dirigido por **Ing. José Carlos Malacara Espinosa**, con colaboración técnica de **Cómplices Sistemas** y agradecimiento a la **Universidad Tecnológica de Coahuila**.
+Proyecto concebido y dirigido por **Ing. José Carlos Malacara Espinosa**, con colaboración técnica de **Complise Sistemas S.A. de C.V.** y agradecimiento a la **Universidad Tecnológica de Coahuila**.
 
 Código bajo [GNU AGPL-3.0-only](LICENSE). Se conservan las licencias y atribuciones de terceros. La publicación incluye el código fuente; no incluye datasets, imágenes de pacientes, pesos ni ejecutables. Consulte [avisos de terceros](THIRD_PARTY_NOTICES.md) y [seguridad](SECURITY.md).
