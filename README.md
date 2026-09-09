@@ -47,7 +47,7 @@ flowchart LR
 
 ### Cómplice Sistemas C.A. de C.V.
 
-Un reconocimiento especial a **[Cómplice Sistemas C.A. de C.V.](https://www.complise.mx/)** por su colaboración técnica en este proyecto y, de manera destacada, a su director general, **Ing. Alejandro Leal Cueva**.
+Un reconocimiento especial a **[Complise Sistemas S.A. de C.V.](https://www.complise.mx/)** por su colaboración técnica en este proyecto y, de manera destacada, a su director general, **Ing. Alejandro Leal Cueva**.
 
 ### Universidad Tecnológica de Coahuila
 
