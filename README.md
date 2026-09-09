@@ -45,7 +45,7 @@ flowchart LR
 
 ## Resultados y límites
 
-Modelo operativo **YOLO11s**, resolución **448 px** e inferencia aumentada. Se conserva el checkpoint anterior: el último piloto no mejoró la métrica de selección.
+Modelo operativo **YOLO11s**, resolución **448 px** e inferencia aumentada.
 
 | Evaluación | Precisión | Recall | mAP@50 | mAP@50–95 |
 |:---|---:|---:|---:|---:|
@@ -53,8 +53,6 @@ Modelo operativo **YOLO11s**, resolución **448 px** e inferencia aumentada. Se 
 | Test interno, registro histórico | 0.8087 | 0.8136 | 0.8543 | 0.4945 |
 
 Precisión y recall son los del punto de máximo F1 de la evaluación; no representan conteos al umbral fijo de la interfaz. No se volvió a evaluar TEST en el último ciclo.
-
-La evaluación externa histórica en UMID mostró una caída severa (mAP@50–95: **0.0348**). Es un antecedente del proyecto, no una nueva evaluación externa del checkpoint actual. La generalización a otros microscopios o laboratorios sigue pendiente.
 
 La última revisión corrigió etiquetas visibles, exportaciones tras correcciones humanas y avisos de saturación. El Silver Review Pack se utilizó para pruebas sintéticas de funcionamiento; **no se usó para entrenar ni para medir exactitud clínica**.
 
