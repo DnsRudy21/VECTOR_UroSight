@@ -14,6 +14,16 @@ ALIASES = {
     "crystal": "cristales",
     "cast": "cilindros",
     "mycete": "levaduras_hongos",
+    "células epiteliales": "celulas_epiteliales",
+    "levaduras y hongos": "levaduras_hongos",
+}
+
+DISPLAY_NAMES = {
+    "eritrocitos": "Eritrocitos", "leucocitos": "Leucocitos",
+    "celulas_epiteliales": "Células epiteliales",
+    "celulas_epiteliales_nucleadas": "Núcleos epiteliales",
+    "cilindros": "Cilindros", "cristales": "Cristales",
+    "levaduras_hongos": "Levaduras y hongos",
 }
 
 def normalize_class_name(name: str) -> str:
@@ -24,6 +34,4 @@ def normalize_class_name(name: str) -> str:
 def class_display_name(name: str) -> str:
     """Keep persisted identifiers stable while displaying the USE ontology."""
     canonical = normalize_class_name(name)
-    if canonical == "celulas_epiteliales_nucleadas":
-        return "Núcleos epiteliales"
-    return canonical.replace("_", " ")
+    return DISPLAY_NAMES.get(canonical, canonical.replace("_", " "))

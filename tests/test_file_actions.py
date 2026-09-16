@@ -75,7 +75,7 @@ def test_export_dialog_dispatches_selected_action(qtbot, monkeypatch):
         dialog = QApplication.activeModalWidget()
         assert isinstance(dialog, QDialog)
         buttons = {b.text(): b for b in dialog.findChildren(QPushButton)}
-        assert set(buttons) == {'Guardar reporte PDF', 'Guardar imágenes anotadas', 'Guardar estadísticas CSV', 'Cancelar'}
+        assert set(buttons) == {'Guardar reporte PDF', 'Guardar imágenes anotadas', 'Guardar estadísticas CSV', 'Guardar sesión JSON', 'Cancelar'}
         buttons['Guardar estadísticas CSV'].click()
 
     QTimer.singleShot(0, choose)

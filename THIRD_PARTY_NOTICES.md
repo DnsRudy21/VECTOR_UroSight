@@ -12,4 +12,8 @@ VECTOR UroSight does not vendor third-party libraries, datasets, model weights, 
 
 USE and UMID datasets, microscopy images, annotations, pretrained checkpoints, trained weights, reports, and derived datasets are not redistributed. Their names appear only to document experiments and provenance. Obtain any research data directly from its authorized source and verify its license, consent, and institutional requirements independently.
 
+## Names and acknowledgments
+
+Complise Sistemas, S.A. de C.V. and Universidad Tecnológica de Coahuila are acknowledged for their role in the project. Their names and any associated marks remain the property of their respective owners; the software license does not grant rights to those marks. These acknowledgments do not constitute clinical certification or a warranty from either organization.
+
 This notice is informational and is not legal advice. A qualified reviewer should assess licenses, trademarks, privacy obligations, and medical-device requirements before commercial or clinical distribution.

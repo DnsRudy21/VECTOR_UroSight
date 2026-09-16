@@ -63,15 +63,19 @@ def annotated_image(result: StudyResult, analysis: ImageAnalysis, output_path: P
         rendered = source.convert("RGB"); draw = ImageDraw.Draw(rendered)
         font = ImageFont.load_default(size=max(14, rendered.width // 55))
         line_width = max(3, rendered.width // 250)
-        for detection in result.reviewed_detections_for(analysis):
+        reviewed = result.reviewed_detections_for(analysis)
+        for detection in reviewed:
             box = detection.bbox; bounds = (box.x-box.width/2, box.y-box.height/2, box.x+box.width/2, box.y+box.height/2)
             color = CLASS_HEX.get(detection.effective_class, "#377DCE")
             draw.rectangle(bounds, outline=color, width=line_width)
+            if len(reviewed) > 50:
+                continue
             label = f"{class_display_name(detection.effective_class)} {detection.confidence:.0%}"
             left, top, right, bottom = draw.textbbox((0,0), label, font=font)
             label_y = max(0, int(bounds[1])-(bottom-top)-8)
-            draw.rectangle((bounds[0], label_y, bounds[0]+right-left+10, label_y+bottom-top+6), fill=color)
-            draw.text((bounds[0]+5, label_y+2), label, font=font, fill="white")
+            label_x = max(0, min(bounds[0], rendered.width - (right-left+10)))
+            draw.rectangle((label_x, label_y, label_x+right-left+10, label_y+bottom-top+6), fill=color)
+            draw.text((label_x+5, label_y+2), label, font=font, fill="white")
         if preview: rendered.thumbnail((1500, 1050))
         rendered.save(output_path, "PNG")
     return output_path
@@ -79,8 +83,13 @@ def annotated_image(result: StudyResult, analysis: ImageAnalysis, output_path: P
 
 def export_annotated_images(result: StudyResult, output_dir: Path) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True); exported = []
+    used = set()
     for analysis in result.successful_images:
         path = output_dir / f"{analysis.image_path.stem}_anotada.png"
+        suffix = 2
+        while path.name.casefold() in used:
+            path = output_dir / f"{analysis.image_path.stem}_{suffix}_anotada.png"; suffix += 1
+        used.add(path.name.casefold())
         exported.append(annotated_image(result, analysis, path))
     return exported
 
@@ -89,7 +98,7 @@ def _distribution_chart(counts: dict[str, int], width: float = 470, height: floa
     height = height or max(65, len(counts) * 19 + 12)
     drawing = Drawing(width, height); maximum = max(counts.values(), default=1); y = height - 20
     for name, total in sorted(counts.items(), key=lambda item: item[1], reverse=True):
-        label = class_display_name(name)[:23]; color = colors.HexColor(CLASS_HEX.get(name, "#169E91"))
+        label = class_display_name(name); color = colors.HexColor(CLASS_HEX.get(name, "#169E91"))
         drawing.add(String(0, y, label, fontName="Helvetica", fontSize=8, fillColor=NAVY))
         drawing.add(Rect(120, y - 2, 285 * total / maximum, 10, rx=4, ry=4, fillColor=color, strokeColor=None))
         drawing.add(String(415, y, str(total), fontName="Helvetica-Bold", fontSize=8, fillColor=NAVY)); y -= 19
@@ -109,10 +118,10 @@ def _gallery_layout(total: int) -> tuple[int, int, float, float]:
 
 def _gallery_cell(result: StudyResult, analysis: ImageAnalysis, preview_path: Path,
                   width: float, height: float, styles) -> Table:
-    accepted = result.detections_for(analysis)
+    accepted = result.reviewed_detections_for(analysis)
     average = sum(d.confidence for d in accepted) / len(accepted) if accepted else 0
     caption = Paragraph(
-        f"<b>{analysis.image_path.name}</b><br/>"
+        f"<b>{escape(analysis.image_path.name)}</b><br/>"
         f"{len(accepted)} hallazgos · score {average:.1%}<br/>"
         f"{_field_counts(result, analysis)}",
         ParagraphStyle("GalleryCaption", parent=styles["BodyText"], fontSize=7.2,
@@ -144,15 +153,15 @@ def generate_pdf(result: StudyResult, output_path: Path) -> Path:
     story = [_page_header(styles), Spacer(1, 14), Paragraph("Resumen del estudio", styles["Brand"]), Paragraph(f"Folio {result.study_id} · Generado {result.created_at.strftime('%d/%m/%Y %H:%M')}", styles["Sub"])]
     if result.is_simulated: story.append(Paragraph("MODO DEMOSTRACIÓN - RESULTADOS SIMULADOS", styles["Demo"]))
     patient_name = result.patient_name or "No capturado"
-    meta = [[Paragraph("ID de paciente", styles["BodyText"]), Paragraph(result.patient_id, styles["BodyText"]),
-             Paragraph("Paciente", styles["BodyText"]), Paragraph(patient_name, styles["BodyText"])],
-            [Paragraph("Folio interno", styles["BodyText"]), Paragraph(result.study_id, styles["BodyText"]),
+    meta = [[Paragraph("ID de paciente", styles["BodyText"]), Paragraph(escape(result.patient_id), styles["BodyText"]),
+             Paragraph("Paciente", styles["BodyText"]), Paragraph(escape(patient_name), styles["BodyText"])],
+            [Paragraph("Folio interno", styles["BodyText"]), Paragraph(escape(result.study_id), styles["BodyText"]),
              Paragraph("Fecha y hora", styles["BodyText"]), Paragraph(result.created_at.strftime("%Y-%m-%d %H:%M"), styles["BodyText"])],
             [Paragraph("Motor de análisis", styles["BodyText"]), Paragraph("Demostración simulada" if result.is_simulated else "YOLO11s", styles["BodyText"]),
              Paragraph("Umbral", styles["BodyText"]), Paragraph(f"{result.confidence_threshold:.0%}", styles["BodyText"])],
             [Paragraph("Campos procesados", styles["BodyText"]), Paragraph(str(len(result.successful_images)), styles["BodyText"]),
              Paragraph("Campos con error", styles["BodyText"]), Paragraph(str(len(result.failed_images)), styles["BodyText"])],
-            [Paragraph("Origen", styles["BodyText"]), Paragraph(result.source or "No especificado", styles["BodyText"]),
+            [Paragraph("Origen", styles["BodyText"]), Paragraph(escape(result.source or "No especificado"), styles["BodyText"]),
              Paragraph("Tiempo de inferencia", styles["BodyText"]), Paragraph("No aplica - tiempo simulado" if result.is_simulated else f"{result.total_inference_ms():.1f} ms", styles["BodyText"])]]
     info = _table(meta, [3.4*cm, 5.2*cm, 3.7*cm, 4.7*cm]); info.setStyle(TableStyle([("FONTNAME", (0,0), (0,-1), "Helvetica-Bold"), ("FONTNAME", (2,0), (2,-1), "Helvetica-Bold"), ("BACKGROUND", (0,0), (0,-1), colors.HexColor("#E8F0F2")), ("BACKGROUND", (2,0), (2,-1), colors.HexColor("#E8F0F2"))]))
     story += [info, Spacer(1, 10)]
@@ -176,7 +185,7 @@ def generate_pdf(result: StudyResult, output_path: Path) -> Path:
     accepted_review = sum(len(result.reviewed_detections_for(image)) for image in result.successful_images)
     story += [Paragraph(f"Auditoría: predicciones originales <b>{original_total}</b> · aceptadas tras revisión <b>{accepted_review}</b> · rechazadas <b>{reviews.get('incorrecta', 0)}</b> · correcciones humanas <b>{reviews.get('clase_equivocada', 0)}</b> · elementos omitidos <b>{reviews.get('elemento_omitido', 0)}</b>", styles["BodyText"]),
               Spacer(1, 8), PageBreak(), Paragraph("Interpretación orientativa", styles["Section"])]
-    for message in interpret_study(result): story += [Paragraph(message, styles["BodyText"]), Spacer(1, 4)]
+    for message in interpret_study(result): story += [Paragraph(escape(message), styles["BodyText"]), Spacer(1, 4)]
     for image in result.successful_images:
         if image.warnings:
             notice = escape(image.image_path.name) + ": " + escape("; ".join(image.warnings))
@@ -196,7 +205,7 @@ def generate_pdf(result: StudyResult, output_path: Path) -> Path:
             annotated_image(result, analysis, temp_path, preview=True)
             cards.append(_gallery_cell(result, analysis, temp_path, preview_width, preview_height, styles))
         except OSError:
-            cards.append(Paragraph(f"{analysis.image_path.name}<br/>Vista previa no disponible", styles["Notice"]))
+            cards.append(Paragraph(f"{escape(analysis.image_path.name)}<br/>Vista previa no disponible", styles["Notice"]))
     page_size = columns * rows_per_page
     for page_start in range(0, len(cards), page_size):
         if page_start:

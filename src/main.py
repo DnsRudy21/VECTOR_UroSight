@@ -1,4 +1,5 @@
 import json
+import hashlib
 import sys
 from pathlib import Path
 from PySide6.QtGui import QIcon
@@ -11,6 +12,11 @@ from src.ui.main_window import MainWindow
 
 def build_provider():
     if settings.inference_provider == "local":
+        if getattr(sys, "frozen", False):
+            model_path = settings.local_model_path
+            metadata = json.loads((model_path.parent / "model_metadata.json").read_text(encoding="utf-8"))
+            if hashlib.sha256(model_path.read_bytes()).hexdigest() != metadata["weights_sha256"]:
+                raise ValueError("El modelo no coincide con la versión verificada. Restaure el portable completo.")
         return LocalYoloProvider(settings.local_model_path, settings.confidence_threshold,
                                  settings.local_model_imgsz, settings.local_model_augment,
                                  settings.local_model_max_detections)
@@ -38,6 +44,9 @@ def run_portable_smoke_test(images_directory: Path, output: Path) -> int:
     return 0 if not result.failed_images and result.successful_images else 3
 
 def main() -> int:
+    if len(sys.argv) == 4 and sys.argv[1] == "--defense-ui-smoke":
+        from src.ui.defense_smoke import run
+        return run(Path(sys.argv[2]), Path(sys.argv[3]), build_provider)
     if len(sys.argv) == 4 and sys.argv[1] == "--portable-smoke-test":
         return run_portable_smoke_test(Path(sys.argv[2]), Path(sys.argv[3]))
     app = QApplication(sys.argv)
@@ -47,6 +56,7 @@ def main() -> int:
         QMessageBox.critical(None, "No se pudo iniciar VECTOR UroSight", str(exc))
         return 2
     app.setApplicationName("VECTOR UroSight")
+    app.setStyle("Fusion")
     app.setWindowIcon(QIcon(str(application_root() / "assets" / "vector_urosight_icon.png")))
     window = MainWindow(AnalysisService(provider))
     window.show()

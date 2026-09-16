@@ -18,13 +18,14 @@ Revise las clases, cajas y advertencias. Las correcciones humanas se conservan e
 
 ## Exportar
 
-Pulse **Exportar resultados**. Una ventana muestra tres acciones independientes:
+Pulse **Exportar resultados**. Una ventana muestra cuatro acciones independientes:
 
 | Acción | Resultado |
 |:---|:---|
 | Guardar reporte PDF | Resumen del estudio y evidencia visual |
 | Guardar imágenes anotadas | Imágenes con detecciones revisadas |
-| Guardar estadísticas CSV | Conteos para consultar en una hoja de cálculo |
+| Guardar estadísticas CSV | Detecciones, clases efectivas y estados de revisión |
+| Guardar sesión JSON | Resultados completos y trazabilidad |
 
 Cada acción solicita dónde guardar. **Cancelar** cierra la ventana sin exportar. El botón se habilita cuando hay un estudio analizado.
 
@@ -33,3 +34,7 @@ Cada acción solicita dónde guardar. **Cancelar** cierra la ventana sin exporta
 ## Privacidad
 
 El nombre del paciente es opcional. Las exportaciones pueden contener los datos introducidos; revise su contenido antes de compartirlas. El procesamiento de imágenes es local.
+
+## Distribución portable
+
+Modelo y umbral están congelados. Si faltan pesos o no coincide su checksum, restaure la distribución completa. No hay descarga automática ni sustitución por un modelo simulado. En campos densos se muestran cajas; seleccione una fila para consultar la etiqueta y confianza. Las exportaciones conservan el estado revisado y la procedencia original. La cancelación finaliza el campo en curso y permite exportar resultados parciales.

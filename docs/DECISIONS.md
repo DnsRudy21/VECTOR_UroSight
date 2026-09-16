@@ -20,12 +20,12 @@ Los modelos e hiperparámetros se seleccionan en validación. TEST no interviene
 
 ## Modelo vigente
 
-Se conserva YOLO11s a 448 px con aumento. El checkpoint histórico seleccionado en época 13 obtuvo mAP50–95 de validación 0.509357, reproducido en septiembre de 2026. Su hash y procedencia están en la [ficha del modelo](MODEL_CARD.md).
+YOLO11s a 448 px con TTA, umbral 0.44 y siete clases. La selección compara balance global y AP por clase sobre validación. La configuración se congela antes de TEST; parámetros, pesos y resultados verificables se registran en la [ficha del modelo](MODEL_CARD.md).
 
-El piloto dirigido de septiembre se rechazó por caída global y en las tres clases prioritarias. El paquete Silver se usa solo para QA sintético. CLAHE y otras transformaciones no se activaron al no ofrecer una mejora consistente. El límite de detecciones permanece en 300 y ahora genera un aviso al alcanzarse.
+Silver se reserva a QA sintético. No se aplica mejora experimental de imagen. El límite de 300 detecciones conserva un aviso visible; no se interpreta como recuento clínico completo de campos extremos.
 
 ## Distribución
 
 Se publica código fuente bajo AGPL-3.0-only con avisos de terceros. Datasets, imágenes clínicas, pesos, portables y resultados privados quedan fuera de Git. PySide6 6.8.3 se conserva por compatibilidad verificada del portable; actualizarlo requiere volver a probar la carga de QtWidgets en el ejecutable.
 
-Los cambios posteriores al empaquetado están en el código fuente. El portable no se reconstruyó durante la revisión de septiembre. Las decisiones históricas sustituidas pueden consultarse en el historial Git.
+La distribución portable verifica sus pesos y mantiene fijos los parámetros de inferencia.

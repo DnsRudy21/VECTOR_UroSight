@@ -37,24 +37,27 @@ def render_analysis(analysis: ImageAnalysis, visible_classes: set[str] | None = 
     painter.setRenderHint(QPainter.Antialiasing)
     painter.setFont(QFont("Segoe UI", 9, QFont.Bold))
     for index, detection in enumerate(analysis.detections):
-        if detection.confidence < threshold:
+        if detection.confidence < threshold or not detection.accepted_after_review:
             continue
-        if visible_classes is not None and detection.class_name not in visible_classes:
+        if visible_classes is not None and detection.effective_class not in visible_classes:
             continue
-        color = CLASS_COLORS.get(detection.class_name, QColor("#6ea8fe"))
+        color = CLASS_COLORS.get(detection.effective_class, QColor("#6ea8fe"))
         selected = selected_index == index
         painter.setOpacity(1.0 if selected_index is None or selected else 0.3)
         painter.setPen(QPen(QColor("#ffffff") if selected else color, 5 if selected else 3))
         box = detection.bbox
         x, y = box.x - box.width / 2, box.y - box.height / 2
         painter.drawRect(int(x), int(y), int(box.width), int(box.height))
-        label = f"{class_display_name(detection.class_name)}  {detection.confidence:.0%}"
+        if len(analysis.detections) > 50 and not selected:
+            continue  # Dense fields retain all boxes; select a row to reveal its label.
+        label = f"{class_display_name(detection.effective_class)}  {detection.confidence:.0%}"
         metrics = painter.fontMetrics()
         width = metrics.horizontalAdvance(label) + 12
+        label_x = max(0, min(int(x), image.width() - width))
         top = max(0, int(y) - 24)
-        painter.fillRect(int(x), top, width, 22, color)
+        painter.fillRect(label_x, top, width, 22, color)
         painter.setPen(QColor("#07151d"))
-        painter.drawText(int(x) + 6, top + 16, label)
+        painter.drawText(label_x + 6, top + 16, label)
     painter.end()
     return pixmap
 

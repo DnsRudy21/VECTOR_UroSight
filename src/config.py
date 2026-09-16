@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import os
+import json
 from pathlib import Path
 import sys
 
@@ -69,6 +70,11 @@ class Settings:
 
     @classmethod
     def from_environment(cls) -> "Settings":
+        final_dir = application_root() / "models" / "vector_urosight" / "final"
+        if getattr(sys, "frozen", False):
+            config = json.loads((final_dir / "evaluation_config.json").read_text(encoding="utf-8"))
+            return cls("local", final_dir / "best.pt", config["imgsz"], config["augment"],
+                       config["operating_confidence"], config["max_det"])
         bundled_model = application_root() / "models" / "vector_urosight" / "best.pt"
         default_provider = "local" if getattr(sys, "frozen", False) and bundled_model.is_file() else "mock"
         provider = os.getenv("INFERENCE_PROVIDER", default_provider).strip().lower()
@@ -80,4 +86,10 @@ class Settings:
                    _confidence_from_env(), _max_detections_from_env())
 
 
-settings = Settings.from_environment()
+class _EnvironmentSettings:
+    """Validate configuration inside the startup error handler, not at import."""
+    def __getattr__(self, name):
+        return getattr(Settings.from_environment(), name)
+
+
+settings = _EnvironmentSettings()

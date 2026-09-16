@@ -38,16 +38,16 @@ flowchart LR
 | 🔬 Examinar | ✏️ Revisar | 📄 Compartir |
 |:---|:---|:---|
 | Una imagen, varias o una carpeta | Clase, confianza y cajas por objeto | Reporte PDF con evidencia |
-| Vista original y anotada | Correcciones humanas trazables | Imágenes anotadas y CSV |
+| Vista original y anotada | Correcciones humanas trazables | Imágenes anotadas, CSV y JSON |
 | Siete clases de partículas | Avisos de calidad y límite de detecciones | Resultados consolidados por estudio |
 
 **Clases:** eritrocitos · leucocitos · células epiteliales · núcleos epiteliales · cilindros · cristales · levaduras/hongos.
 
 ## Agradecimientos
 
-### Complise Sistemas C.A. de C.V.
+### Complise Sistemas, S.A. de C.V.
 
-Un reconocimiento especial a **[Complise Sistemas S.A. de C.V.](https://www.complise.mx/)** por su colaboración técnica en este proyecto y, de manera destacada, a su director general, **Ing. Alejandro Leal Cueva**.
+Un reconocimiento especial a **[Complise Sistemas, S.A. de C.V.](https://www.complise.mx/)** por su colaboración técnica en este proyecto y, de manera destacada, a su director general, **Ing. Alejandro Leal Cueva**.
 
 ### Universidad Tecnológica de Coahuila
 
@@ -68,12 +68,16 @@ Modelo operativo **YOLO11s**, resolución **448 px** e inferencia aumentada.
 
 | Evaluación | Precisión | Recall | mAP@50 | mAP@50–95 |
 |:---|---:|---:|---:|---:|
-| Validación interna | 0.8251 | 0.8154 | 0.8677 | 0.5094 |
-| Test interno | 0.8087 | 0.8136 | 0.8543 | 0.4945 |
+| Validación interna | 0.8248 | 0.8205 | 0.8713 | 0.5132 |
+| Test interno | 0.8036 | 0.8142 | 0.8584 | 0.5008 |
 
 Precisión y recall son los del punto de máximo F1 de la evaluación; no representan conteos al umbral fijo de la interfaz.
 
 La generalización a otros microscopios y laboratorios no está validada.
+
+Versión **1.1.0**. USE: **5,293 imágenes** (4,177 entrenamiento / 848 validación / 268 test). El F1 calculado como media armónica de la precisión y el recall macro de TEST es **0.8089**. El test interno también se utilizó en evaluaciones históricas; no es una cohorte externa nueva.
+
+El portable local incluye el modelo congelado y funciona sin instalar Python ni conectarse a Internet. Mantenga `VECTOR_UroSight.exe` y `_internal` juntos. La configuración del portable está fijada; los pesos y el ejecutable se gestionan por separado del repositorio público.
 
 [Ficha técnica y evaluación del modelo](docs/MODEL_CARD.md)
 
@@ -112,7 +116,7 @@ Coloque un checkpoint compatible y autorizado en `models/vector_urosight/best.pt
 ```dotenv
 INFERENCE_PROVIDER=local
 LOCAL_MODEL_PATH=models/vector_urosight/best.pt
-CONFIDENCE_THRESHOLD=0.443443
+CONFIDENCE_THRESHOLD=0.44
 LOCAL_MODEL_IMGSZ=448
 LOCAL_MODEL_AUGMENT=true
 LOCAL_MODEL_MAX_DETECTIONS=300
@@ -132,7 +136,7 @@ Inicie de nuevo con `.\.venv\Scripts\python.exe -m src.main`. Los pesos no se de
 | `src/` | Aplicación, inferencia, revisión y exportación |
 | `tests/` | Pruebas de dominio, interfaz y reportes |
 | `tools/` | Auditoría de datos, evaluación y entrenamiento |
-| `docs/` | Guía de uso, arquitectura, modelo y experimentos |
+| `docs/` | Guía de uso, arquitectura, modelo y reentrenamiento |
 | `assets/` | Iconos y vista de la aplicación |
 | `scripts/` | Instalación, ejecución y empaquetado |
 

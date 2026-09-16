@@ -61,3 +61,9 @@ VECTOR_UroSight_*.pdf
 *.bak
 /private/
 /local_archive/
+/release_audit/
+/DEMO_DEFENSA/
+/RELEASE_MANIFEST.json
+/FINAL_RELEASE_REPORT.md
+/MODEL_FINAL_COMPARISON.csv
+/PUBLICAR_EN_GITHUB.cmd

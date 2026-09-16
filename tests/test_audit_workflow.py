@@ -32,7 +32,7 @@ def test_raw_class_survives_normalization_and_human_review(tmp_path):
 
 
 def test_dynamic_legend_contains_only_present_classes():
-    legend = legend_html({"cilindros", "eritrocitos"})
+    legend = legend_html({"cilindros", "eritrocitos"}).lower()
     assert "cilindros" in legend and "eritrocitos" in legend
     assert "leucocitos" not in legend
 

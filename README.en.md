@@ -31,16 +31,16 @@ VECTOR UroSight is a desktop application for examining urinary sediment images, 
 | 🔬 Examine | ✏️ Review | 📄 Export |
 |:---|:---|:---|
 | One image, multiple images, or a folder | Classes, confidence, and bounding boxes | PDF reports with visual evidence |
-| Original and annotated views | Traceable human corrections | Annotated images and CSV |
+| Original and annotated views | Traceable human corrections | Annotated images, CSV, and JSON |
 | Seven particle classes | Quality and detection-limit warnings | Consolidated study results |
 
 **Classes:** erythrocytes, leukocytes, epithelial cells, epithelial nuclei, casts, crystals, and yeast/fungi.
 
 ## Acknowledgments
 
-### Cómplice Sistemas C.A. de C.V.
+### Complise Sistemas, S.A. de C.V.
 
-Special recognition to **[Cómplice Sistemas C.A. de C.V.](https://www.complise.mx/)** for its technical collaboration on this project, and especially to its General Director, **Eng. Alejandro Leal Cueva**.
+Special recognition to **[Complise Sistemas, S.A. de C.V.](https://www.complise.mx/)** for its technical collaboration on this project, and especially to its General Director, **Eng. Alejandro Leal Cueva**.
 
 ### Universidad Tecnológica de Coahuila
 
@@ -61,12 +61,16 @@ The active model is **YOLO11s**, using **448 px** and test-time augmentation.
 
 | Evaluation | Precision | Recall | mAP@50 | mAP@50–95 |
 |:---|---:|---:|---:|---:|
-| Internal validation | 0.8251 | 0.8154 | 0.8677 | 0.5094 |
-| Internal test | 0.8087 | 0.8136 | 0.8543 | 0.4945 |
+| Internal validation | 0.8248 | 0.8205 | 0.8713 | 0.5132 |
+| Internal test | 0.8036 | 0.8142 | 0.8584 | 0.5008 |
 
 Precision and recall refer to the evaluation's maximum-F1 operating point, not the interface's fixed confidence threshold.
 
 Generalization across microscopes and laboratories has not been validated.
+
+Version **1.1.0**. USE: **5,293 images** (4,177 training / 848 validation / 268 test). F1 computed as the harmonic mean of TEST macro precision and recall is **0.8089**. This internal test set was also used in historical evaluations; it is not a new external cohort.
+
+The local portable includes the frozen model and runs without Python installation or Internet access. Keep `VECTOR_UroSight.exe` and `_internal` together. Portable configuration is fixed; weights and binaries are managed separately from the public repository.
 
 [Model specifications and evaluation](docs/MODEL_CARD.md)
 
@@ -103,7 +107,7 @@ Place a compatible, authorized checkpoint at `models/vector_urosight/best.pt` an
 ```dotenv
 INFERENCE_PROVIDER=local
 LOCAL_MODEL_PATH=models/vector_urosight/best.pt
-CONFIDENCE_THRESHOLD=0.443443
+CONFIDENCE_THRESHOLD=0.44
 LOCAL_MODEL_IMGSZ=448
 LOCAL_MODEL_AUGMENT=true
 LOCAL_MODEL_MAX_DETECTIONS=300
@@ -123,7 +127,7 @@ Run `.\.venv\Scripts\python.exe -m src.main` again. Weights are not downloaded o
 | `src/` | Application, inference, review, and exports |
 | `tests/` | Domain, UI, and report tests |
 | `tools/` | Data audits, evaluation, and training |
-| `docs/` | User guide, architecture, model, and experiments |
+| `docs/` | User guide, architecture, model, and retraining |
 | `assets/` | Icons and application preview |
 | `scripts/` | Setup, execution, and packaging |
 

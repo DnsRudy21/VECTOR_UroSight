@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vector-urosight"
-version = "1.0.0"
+version = "1.1.0"
 description = "Academic desktop prototype for traceable urinary sediment image analysis"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 license = "AGPL-3.0-only"
 authors = [{name = "José Carlos Malacara Espinosa"}]
-dependencies = ["PySide6>=6.7,<7", "Pillow>=10,<13", "python-dotenv>=1.0,<2", "reportlab>=4.2,<5"]
+dependencies = ["PySide6==6.8.3", "Pillow>=10,<13", "python-dotenv>=1.0,<2", "reportlab>=4.2,<5"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Education",

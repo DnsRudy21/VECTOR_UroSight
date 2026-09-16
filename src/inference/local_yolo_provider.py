@@ -1,4 +1,6 @@
 from pathlib import Path
+import hashlib
+import os
 from src.domain.models import BoundingBox, Detection, ImageAnalysis
 from src.inference.base import InferenceProvider
 
@@ -11,10 +13,11 @@ class LocalYoloProvider(InferenceProvider):
             raise ValueError("max_detections debe ser un entero positivo.")
         if not model_path.exists():
             raise FileNotFoundError(f"No existe el modelo local: {model_path}")
+        os.environ["YOLO_AUTOINSTALL"] = "false"
         from ultralytics import YOLO
         self._model = YOLO(str(model_path))
         self.model_path = model_path
-        self.model_id = model_path.name
+        self.model_id = model_path.name + ":sha256:" + hashlib.sha256(model_path.read_bytes()).hexdigest()
         self._confidence = confidence
         self._imgsz = imgsz
         self._augment = augment
@@ -28,6 +31,8 @@ class LocalYoloProvider(InferenceProvider):
             imgsz=self._imgsz,
             augment=self._augment,
             max_det=self.max_detections,
+            iou=0.7,
+            device="cpu",
             verbose=False,
         )[0]
         detections = []

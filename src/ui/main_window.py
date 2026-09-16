@@ -2,6 +2,7 @@ from src.processing.class_normalizer import class_display_name, normalize_class_
 from src.processing.aggregator import KNOWN_CLASSES
 from pathlib import Path
 import tempfile
+import sys
 
 from PySide6.QtCore import QSize, Qt, QThread, Signal, QEvent
 from PySide6.QtGui import QColor, QDragEnterEvent, QDropEvent, QIcon, QPainter, QPen, QPixmap
@@ -93,13 +94,13 @@ class ClassBarChart(QWidget):
     def paintEvent(self, _event) -> None:
         painter = QPainter(self); painter.setRenderHint(QPainter.Antialiasing)
         painter.setFont(self.font()); maximum = max(self._counts.values(), default=1)
-        width = max(40, self.width() - 150); y = 8
+        width = max(40, self.width() - 175); y = 8
         for name, total in sorted(self._counts.items(), key=lambda item: item[1], reverse=True):
             label = class_display_name(name); painter.setPen(self.palette().text().color())
-            painter.drawText(4, y + 15, label[:19]); bar_width = max(3, int(width * total / maximum))
+            painter.drawText(4, y + 15, label); bar_width = max(3, int(width * total / maximum))
             painter.setPen(Qt.NoPen); painter.setBrush(CLASS_COLORS.get(name, QColor("#31B7B2")))
-            painter.drawRoundedRect(125, y + 3, bar_width, 14, 5, 5)
-            painter.setPen(self.palette().text().color()); painter.drawText(132 + width, y + 15, str(total)); y += 25
+            painter.drawRoundedRect(150, y + 3, bar_width, 14, 5, 5)
+            painter.setPen(self.palette().text().color()); painter.drawText(157 + width, y + 15, str(total)); y += 25
         if not self._counts:
             painter.setPen(self.palette().text().color()); painter.drawText(self.rect(), Qt.AlignCenter, "Sin datos estadísticos")
         painter.end()
@@ -141,6 +142,7 @@ class MainWindow(QMainWindow):
         self._worker: AnalysisWorker | None = None
         self._close_when_finished = False
         self._selected_detection_index: int | None = None
+        self._displayed_row = -1
         self._preprocess_temp = None
         self._active_variant = "original"
         self._last_original_result: StudyResult | None = None
@@ -152,6 +154,10 @@ class MainWindow(QMainWindow):
         self._theme = "light"
         self.setStyleSheet(stylesheet(self._theme))
         self._build_ui()
+        if getattr(sys, "frozen", False):
+            self._threshold.setEnabled(False)
+            self._threshold.setToolTip("Umbral verificado y congelado para esta versión.")
+            self._experimental_preprocess.hide()
         for widget in self.findChildren(QWidget):
             widget.setAcceptDrops(True)
             widget.installEventFilter(self)
@@ -181,12 +187,13 @@ class MainWindow(QMainWindow):
         self._cancel_button = QPushButton("Cancelar análisis"); self._cancel_button.clicked.connect(self._cancel); self._cancel_button.hide(); side.addWidget(self._cancel_button); splitter.addWidget(sidebar)
 
         center = QFrame(); center.setProperty("card", "true"); center_layout = QVBoxLayout(center); center_layout.setContentsMargins(14, 14, 14, 14); center_layout.setSpacing(9)
-        viewer_tools = QHBoxLayout(); self._legend = QLabel("Seleccione imágenes para comenzar", objectName="muted"); viewer_tools.addWidget(self._legend); viewer_tools.addStretch()
+        viewer_tools = QHBoxLayout(); self._legend = QLabel("Seleccione imágenes para comenzar", objectName="muted"); self._legend.setWordWrap(True); self._legend.setMinimumHeight(44); viewer_tools.addStretch()
         self._view_mode = QComboBox(); self._view_mode.addItems(["Vista anotada", "Vista original"]); self._view_mode.currentIndexChanged.connect(self._refresh_view); viewer_tools.addWidget(self._view_mode)
         self._class_filter = QComboBox(); self._class_filter.addItem("Todas las clases"); self._class_filter.currentIndexChanged.connect(self._refresh_view); viewer_tools.addWidget(self._class_filter)
         settings = QPushButton("⚙", objectName="icon"); settings.setToolTip("Preferencias de análisis"); settings.clicked.connect(self._show_preferences); viewer_tools.addWidget(settings); center_layout.addLayout(viewer_tools)
+        center_layout.addWidget(self._legend)
         self._viewer = ImageView(); center_layout.addWidget(self._viewer, 3)
-        self._field_details = QLabel("Seleccione un campo para consultar sus resultados.", objectName="muted"); self._field_details.setWordWrap(True); center_layout.addWidget(self._field_details)
+        self._field_details = QLabel("Seleccione un campo para consultar sus resultados.", objectName="muted"); self._field_details.setWordWrap(True); self._field_details.setMinimumHeight(88); center_layout.addWidget(self._field_details)
         self._detections = QTableWidget(0, 7); self._detections.setHorizontalHeaderLabels(["Clase original", "Hallazgo", "Confianza", "Caja", "Estado", "Revisión", "Corrección"]); self._detections.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch); self._detections.setEditTriggers(QAbstractItemView.NoEditTriggers); center_layout.addWidget(self._detections, 1)
         self._review_panel = QWidget(); review_tools = QHBoxLayout(self._review_panel); review_tools.setContentsMargins(0, 0, 0, 0); self._review_status = QComboBox(); self._review_status.addItems(["correcta", "incorrecta", "clase_equivocada", "elemento_omitido"]); review_tools.addWidget(self._review_status); self._corrected_class = QComboBox(); self._corrected_class.setEditable(True); review_tools.addWidget(self._corrected_class); apply_review = QPushButton("Guardar revisión"); apply_review.clicked.connect(self._apply_review); review_tools.addWidget(apply_review); self._review_panel.hide(); center_layout.addWidget(self._review_panel)
         self._preferences = QDialog(self); self._preferences.setWindowTitle("Preferencias de análisis"); self._preferences.setMinimumWidth(410); preferences_layout = QVBoxLayout(self._preferences)
@@ -200,7 +207,7 @@ class MainWindow(QMainWindow):
 
         results = QFrame(); results.setProperty("card", "true"); results_layout = QVBoxLayout(results); results_layout.setContentsMargins(14, 14, 14, 14); results_layout.setSpacing(10); results_layout.addWidget(QLabel("Resultados", objectName="section"))
         cards = QGridLayout(); self._count_card = self._card(cards, "Hallazgos", 0, 0); self._confidence_card = self._card(cards, "Confianza media", 0, 1); self._time_card = self._card(cards, "Tiempo", 1, 0); self._images_card = self._card(cards, "Campos", 1, 1); results_layout.addLayout(cards)
-        self._class_chart = ClassBarChart(); self._class_chart.setMaximumHeight(170); results_layout.addWidget(self._class_chart)
+        self._class_chart = ClassBarChart(); self._class_chart.setFixedHeight(190); results_layout.addWidget(self._class_chart)
         self._summary = QTableWidget(0, 3); self._summary.setHorizontalHeaderLabels(["Clase", "Total", "Prom./campo"]); self._summary.hide()
         results_layout.addWidget(QLabel("Interpretación orientativa", objectName="section")); self._interpretation = QTextEdit(); self._interpretation.setReadOnly(True); self._interpretation.setPlaceholderText("La interpretación aparecerá al terminar el análisis."); results_layout.addWidget(self._interpretation, 1)
         warning = QLabel("USO ACADÉMICO · Confirme visualmente cada hallazgo. No sustituye el criterio profesional."); warning.setObjectName("warning"); warning.setWordWrap(True); results_layout.addWidget(warning)
@@ -275,7 +282,7 @@ class MainWindow(QMainWindow):
             if not url.isLocalFile():
                 continue
             path = Path(url.toLocalFile()).resolve()
-            paths.extend(self._service.collect_folder(path) if path.is_dir() else [path])
+            paths.extend(self._collect_folder(path) if path.is_dir() else [path])
         if paths:
             self._set_paths(paths, "Arrastrar y soltar")
         else:
@@ -294,7 +301,8 @@ class MainWindow(QMainWindow):
         for title, description, callback in (
             ("Guardar reporte PDF", "Resumen del estudio y evidencia visual.", self._export_pdf),
             ("Guardar imágenes anotadas", "Imágenes con las detecciones revisadas.", self._export_images),
-            ("Guardar estadísticas CSV", "Conteos para consultar en una hoja de cálculo.", self._export_csv),
+            ("Guardar estadísticas CSV", "Detecciones y revisión para una hoja de cálculo.", self._export_csv),
+            ("Guardar sesión JSON", "Resultados completos y trazabilidad de la revisión.", self._export_json),
         ):
             button = QPushButton(title)
             button.clicked.connect(lambda checked=False, action=callback: (dialog.accept(), action()))
@@ -314,9 +322,16 @@ class MainWindow(QMainWindow):
         if self._is_analyzing(): return
         folder = QFileDialog.getExistingDirectory(self, "Seleccionar carpeta")
         if folder:
-            paths = self._service.collect_folder(Path(folder))
+            paths = self._collect_folder(Path(folder))
             if not paths: QMessageBox.information(self, "Carpeta vacía", "La carpeta no contiene imágenes compatibles.")
             else: self._set_paths(paths, folder)
+
+    def _collect_folder(self, folder: Path) -> list[Path]:
+        try:
+            return self._service.collect_folder(folder)
+        except OSError as exc:
+            QMessageBox.warning(self, "No se pudo abrir la carpeta", str(exc))
+            return []
 
     def _set_paths(self, paths: list[Path], source: str) -> None:
         if self._is_analyzing(): return
@@ -327,6 +342,15 @@ class MainWindow(QMainWindow):
         self._selected_paths, self._source, self._result = accepted, source, None; self._files.clear(); self._export_button.setEnabled(False)
         self._analyze_button.setEnabled(bool(accepted)); self._set_stage(2 if accepted else 1, "Listo para analizar" if accepted else "Preparar estudio")
         self._patient_id_value = generate_patient_id(); self._patient_id.setText(self._patient_id_value)
+        self._selected_detection_index = None; self._displayed_row = -1
+        self._last_original_result = None
+        self._detections.setRowCount(0); self._summary.setRowCount(0); self._class_chart.set_counts({})
+        self._interpretation.clear(); self._review_panel.hide(); self._progress.hide()
+        for card in (self._count_card, self._confidence_card, self._time_card, self._images_card): card.setText("—")
+        self._legend.setText("Seleccione imágenes para comenzar")
+        self._field_details.setText("Estudio sin analizar.")
+        self._class_filter.clear(); self._class_filter.addItem("Todas las clases", None)
+        self._viewer.show_pixmap(QPixmap())
         for path in accepted:
             item = QListWidgetItem(QIcon(str(path)), path.name); item.setToolTip(str(path)); self._files.addItem(item)
         if accepted: self._files.setCurrentRow(0); self._show_original(accepted[0])
@@ -346,7 +370,9 @@ class MainWindow(QMainWindow):
             self._active_variant = "preprocesada_experimental"; source = f"{self._source} · PREPROCESAMIENTO EXPERIMENTAL"
         self._thread = QThread(self); self._worker = AnalysisWorker(self._service, analysis_paths, source); self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run); self._worker.progress.connect(self._on_progress); self._worker.completed.connect(self._on_completed); self._worker.failed.connect(lambda message: QMessageBox.critical(self, "Error de análisis", message)); self._worker.finished.connect(self._finish_worker); self._worker.finished.connect(self._thread.quit)
+        self._worker.finished.connect(self._worker.deleteLater)
         self._thread.finished.connect(self._thread_finished)
+        self._thread.finished.connect(self._thread.deleteLater)
         self._add_files_button.setEnabled(False); self._add_folder_button.setEnabled(False)
         self._export_button.setEnabled(False)
         self._analyze_button.setEnabled(False); self._cancel_button.show(); self._progress.setRange(0, len(self._selected_paths)); self._progress.setValue(0); self._progress.show(); self._thread.start()
@@ -359,9 +385,11 @@ class MainWindow(QMainWindow):
         self._progress.setMaximum(total); self._progress.setValue(done); self.statusBar().showMessage(f"Procesando {done}/{total}: {name}")
 
     def _finish_worker(self) -> None:
-        self._analyze_button.setEnabled(True); self._cancel_button.hide()
+        self._cancel_button.hide()
 
     def _thread_finished(self) -> None:
+        self._thread = None; self._worker = None
+        self._analyze_button.setEnabled(bool(self._selected_paths))
         self._add_files_button.setEnabled(True); self._add_folder_button.setEnabled(True)
         self._export_button.setEnabled(self._result is not None)
         if self._close_when_finished:
@@ -378,6 +406,8 @@ class MainWindow(QMainWindow):
         result.confidence_threshold = self._threshold.value()
         self._update_study_results()
         self._files.setCurrentRow(0); self._select_analysis(0); self.statusBar().showMessage(f"Análisis finalizado. {len(result.failed_images)} campo(s) con error.")
+        if len(result.images) < len(self._selected_paths):
+            self.statusBar().showMessage(f"Análisis cancelado: {len(result.images)} de {len(self._selected_paths)} campos procesados. Puede revisar y exportar los resultados parciales.")
         if self._active_variant != "original" and self._last_original_result:
             delta = sum(result.class_counts().values()) - sum(self._last_original_result.class_counts().values())
             self.statusBar().showMessage(f"Comparación experimental finalizada: {delta:+d} detecciones frente al análisis original. Resultados no combinados.")
@@ -391,7 +421,7 @@ class MainWindow(QMainWindow):
         self._count_card.setText(str(sum(counts.values()))); self._confidence_card.setText(f"{result.average_confidence():.1%}")
         self._time_card.setText("Simulado" if result.is_simulated else f"{result.total_inference_ms():.1f} ms"); self._images_card.setText(f"{len(result.successful_images)}/{len(result.images)}")
         self._interpretation.setPlainText("\n\n".join(interpret_study(result)))
-        classes = sorted({d.class_name for image in result.successful_images for d in image.detections})
+        classes = sorted({d.effective_class for image in result.successful_images for d in image.detections if d.accepted_after_review})
         self._legend.setText(legend_html(set(classes))); self._corrected_class.clear()
         for name in sorted(KNOWN_CLASSES | set(classes)):
             self._corrected_class.addItem(class_display_name(name), name)
@@ -416,6 +446,8 @@ class MainWindow(QMainWindow):
 
     def _select_analysis(self, row: int) -> None:
         if row < 0: return
+        if row != self._displayed_row:
+            self._selected_detection_index = None; self._review_panel.hide(); self._displayed_row = row
         if self._result and row < len(self._result.images): self._display_analysis(self._result.images[row])
         elif row < len(self._selected_paths): self._show_original(self._selected_paths[row])
 
@@ -434,14 +466,14 @@ class MainWindow(QMainWindow):
         selected = self._class_filter.currentData(); visible = None if selected is None else {selected}
         annotated = self._view_mode.currentIndex() == 0 and self._annotations.isChecked(); threshold = self._result.confidence_threshold if self._result else 0
         render_threshold = 0.0 if self._audit_mode.isChecked() else threshold
-        self._viewer.show_pixmap(render_analysis(analysis, visible, annotated, render_threshold, self._selected_detection_index)); indexed = [(i, d) for i, d in enumerate(analysis.detections) if (self._audit_mode.isChecked() or d.confidence >= threshold) and (visible is None or d.class_name in visible)]; self._detections.setRowCount(len(indexed))
+        self._viewer.show_pixmap(render_analysis(analysis, visible, annotated, render_threshold, self._selected_detection_index)); indexed = [(i, d) for i, d in enumerate(analysis.detections) if (self._audit_mode.isChecked() or (d.confidence >= threshold and d.accepted_after_review)) and (visible is None or d.effective_class in visible)]; self._detections.setRowCount(len(indexed))
         self._detections.setProperty("detection_indices", [i for i, _ in indexed])
         for row, (_, d) in enumerate(indexed):
-            values = (d.raw_class or d.class_name, class_display_name(d.class_name), f"{d.confidence:.1%}", f"{d.bbox.x:.0f}, {d.bbox.y:.0f}, {d.bbox.width:.0f}, {d.bbox.height:.0f}", "aceptada" if d.confidence >= threshold else "descartada por umbral", d.human_review, d.corrected_class)
+            values = (d.raw_class or d.class_name, class_display_name(d.effective_class), f"{d.confidence:.1%}", f"{d.bbox.x:.0f}, {d.bbox.y:.0f}, {d.bbox.width:.0f}, {d.bbox.height:.0f}", "rechazada en revisión" if not d.accepted_after_review else "aceptada" if d.confidence >= threshold else "descartada por umbral", d.human_review, d.corrected_class)
             for col, value in enumerate(values): self._detections.setItem(row, col, QTableWidgetItem(value))
-        accepted = analysis.accepted_detections(threshold); avg = sum(d.confidence for d in accepted)/len(accepted) if accepted else 0
+        accepted = [d for d in analysis.accepted_detections(threshold) if d.accepted_after_review]; avg = sum(d.confidence for d in accepted)/len(accepted) if accepted else 0
         counts: dict[str, int] = {}
-        for detection in accepted: counts[detection.class_name] = counts.get(detection.class_name, 0) + 1
+        for detection in accepted: counts[detection.effective_class] = counts.get(detection.effective_class, 0) + 1
         count_text = ", ".join(f"{class_display_name(name)}: {total}" for name, total in sorted(counts.items())) or "sin detecciones"
         quality = analysis.quality; quality_text = "Sin evaluación"
         if quality: quality_text = f"{quality.status} · {quality.width}×{quality.height} · brillo {quality.brightness:.0f} · contraste {quality.contrast:.0f} · nitidez {quality.sharpness:.0f}"
@@ -466,6 +498,9 @@ class MainWindow(QMainWindow):
     def _apply_review(self) -> None:
         if not self._result or self._selected_detection_index is None: return
         image = self._result.images[self._files.currentRow()]; status = self._review_status.currentText()
+        if status in {"clase_equivocada", "elemento_omitido"} and self._review_class_value() not in KNOWN_CLASSES:
+            QMessageBox.warning(self, "Clase no válida", "Seleccione una de las siete clases del modelo.")
+            return
         if status == "elemento_omitido":
             image.omitted_elements.append({"status": status, "class": self._review_class_value()})
         else:
@@ -487,7 +522,7 @@ class MainWindow(QMainWindow):
         self._export_pdf()
 
     def _export_pdf(self) -> None:
-        self._export_file("Guardar reporte clínico", ".pdf", "PDF (*.pdf)", generate_pdf)
+        self._export_file("Guardar reporte de análisis asistido", ".pdf", "PDF (*.pdf)", generate_pdf)
 
     def _export_csv(self) -> None:
         self._export_file("Guardar estadísticas", ".csv", "CSV (*.csv)", export_csv)

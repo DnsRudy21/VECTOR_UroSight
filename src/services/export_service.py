@@ -23,7 +23,8 @@ def detection_rows(result: StudyResult) -> list[dict[str, object]]:
                          "normalized_class": detection.class_name, "effective_class": detection.effective_class,
                          "display_class": class_display_name(detection.effective_class),
                          "model": detection.model_id, "confidence": round(detection.confidence, 4),
-                         "status": "accepted" if detection.confidence >= result.confidence_threshold else "discarded_by_threshold",
+                         "status": ("rejected_by_review" if not detection.accepted_after_review else
+                                    "accepted" if detection.confidence >= result.confidence_threshold else "discarded_by_threshold"),
                          "requires_review": detection.requires_review,
                          "review_reasons": "; ".join(detection.review_reasons),
                          "human_review": detection.human_review, "corrected_class": detection.corrected_class,
@@ -37,7 +38,7 @@ def export_json(result: StudyResult, output_path: Path) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fields = []
     for image in result.images:
-        accepted = image.accepted_detections(result.confidence_threshold)
+        accepted = result.reviewed_detections_for(image)
         fields.append({"image": image.image_path.name, "processing_variant": image.processing_variant,
                        "status": "error" if image.error else "processed", "error": image.error,
                        "total_raw_detections": len(image.raw_detections), "accepted_detections": len(accepted),
@@ -71,8 +72,17 @@ def export_csv(result: StudyResult, output_path: Path) -> Path:
               "x", "y", "width", "height", "error", "display_class"]
     with output_path.open("w", newline="", encoding="utf-8-sig") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
-        writer.writeheader(); writer.writerows(detection_rows(result))
+        writer.writeheader()
+        for row in detection_rows(result):
+            writer.writerow({key: _csv_text(value) for key, value in row.items()})
     return output_path
+
+
+def _csv_text(value):
+    """Keep free text from becoming an executable spreadsheet formula."""
+    if isinstance(value, str) and (value.lstrip().startswith(('=', '+', '-', '@')) or value.startswith(('\t', '\r', '\n'))):
+        return "'" + value
+    return value
 
 
 export_audit_json = export_json

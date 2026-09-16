@@ -5,8 +5,8 @@ type: software
 authors:
   - family-names: "Malacara Espinosa"
     given-names: "José Carlos"
-version: 1.0.0
-date-released: 2026-09-07
+version: 1.1.0
+date-released: 2026-09-13
 license: AGPL-3.0-only
 abstract: "Prototipo académico de escritorio para análisis trazable y supervisado de imágenes de sedimento urinario."
 keywords:

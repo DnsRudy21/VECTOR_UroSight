@@ -128,7 +128,7 @@ class StudyResult:
         return summary
 
     def average_confidence(self) -> float:
-        values = [d.confidence for image in self.successful_images for d in self.detections_for(image)]
+        values = [d.confidence for image in self.successful_images for d in self.reviewed_detections_for(image)]
         return sum(values) / len(values) if values else 0.0
 
     def total_inference_ms(self) -> float:

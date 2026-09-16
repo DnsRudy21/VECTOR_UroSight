@@ -7,7 +7,7 @@ REQUIRED_DOCS = (
     "README.md", "README.en.md", "LICENSE", "COPYRIGHT", "SECURITY.md", "THIRD_PARTY_NOTICES.md", ".env.example",
     "docs/USER_GUIDE.md", "docs/RETRAINING.md",
     "docs/DECISIONS.md",
-    "docs/MODEL_CARD.md", "docs/CLASS_ONTOLOGY.md", "docs/ERROR_ANALYSIS.md", "docs/MODEL_COMPARISON.md",
+    "docs/MODEL_CARD.md", "docs/CLASS_ONTOLOGY.md", "docs/ARCHITECTURE.md",
 )
 FORBIDDEN_ROOTS = (".env", "artifacts", "build", "data_processed", "dist", "legacy", "models", "output", "runs", "tmp")
 FORBIDDEN_SUFFIXES = {".pt", ".pth", ".onnx", ".engine", ".zip"}

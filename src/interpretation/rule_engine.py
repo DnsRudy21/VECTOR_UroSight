@@ -1,3 +1,5 @@
+from src.processing.class_normalizer import class_display_name
+
 DISCLAIMER = (
     "Interpretación orientativa para fines académicos. Los resultados requieren revisión "
     "por el profesional del laboratorio, deben correlacionarse con el resto del examen y no constituyen un diagnóstico."
@@ -39,7 +41,7 @@ def interpret_study(result) -> list[str]:
     if counts:
         predominant = max(counts, key=counts.get)
         fields = result.fields_by_class().get(predominant, 0)
-        messages.insert(0, f"La clase predominante fue {predominant.replace('_', ' ')}, presente en {fields} de {len(result.successful_images)} campos procesados.")
+        messages.insert(0, f"La clase predominante fue {class_display_name(predominant)}, presente en {fields} de {len(result.successful_images)} campos procesados.")
     if result.hidden_count():
         messages.insert(-1, f"{result.hidden_count()} detección(es) quedaron ocultas por el umbral de confianza y se conservan para trazabilidad.")
     quality_fields = sum(bool(image.quality and image.quality.warnings) for image in result.successful_images)
