@@ -6,7 +6,7 @@ reportlab==4.5.1
 ultralytics==8.4.90
 torch==2.12.1
 torchvision==0.27.1
-numpy==2.3.5
+numpy==2.4.6
 scipy==1.17.1
 opencv-python==4.10.0.84
 matplotlib==3.11.0
