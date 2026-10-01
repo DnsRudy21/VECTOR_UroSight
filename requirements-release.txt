@@ -3,7 +3,7 @@ PySide6==6.8.3
 Pillow==12.3.0
 python-dotenv==1.2.2
 reportlab==4.5.1
-ultralytics==8.4.90
+ultralytics==8.4.164
 torch==2.12.1
 torchvision==0.27.1
 numpy==2.3.5
